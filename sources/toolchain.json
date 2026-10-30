@@ -1,0 +1,36 @@
+{
+  "MetaCubeX/mihomo": {
+    "version": "v1.19.33",
+    "assets": [
+      {
+        "name": "mihomo-linux-amd64-compatible-v1.19.33.gz",
+        "browser_download_url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.33/mihomo-linux-amd64-compatible-v1.19.33.gz",
+        "digest": "sha256:386508bfb1c72c43b6a0eda73708ecdce82546581b0ebcb16366c53757c622b6"
+      },
+      {
+        "name": "mihomo-windows-amd64-compatible-v1.19.33.zip",
+        "browser_download_url": "https://github.com/MetaCubeX/mihomo/releases/download/v1.19.33/mihomo-windows-amd64-compatible-v1.19.33.zip",
+        "digest": "sha256:7aaf636a4f2172dcd8ec34ac4f52797b059195e5afd6409508c963e545f8864d"
+      }
+    ]
+  },
+  "XTLS/Xray-core": {
+    "version": "v26.10.29",
+    "assets": [
+      {
+        "name": "Xray-linux-64.zip",
+        "browser_download_url": "https://github.com/XTLS/Xray-core/releases/download/v26.10.29/Xray-linux-64.zip",
+        "digest": "sha256:8a5f3e6a1057e4bd0f8a7c57c9d91204b4be0b74222a6e210d070603101163c2"
+      },
+      {
+        "name": "Xray-windows-64.zip",
+        "browser_download_url": "https://github.com/XTLS/Xray-core/releases/download/v26.10.29/Xray-windows-64.zip",
+        "digest": "sha256:fce33e81cccf50e7aab572b175519a50b5e0f9d2f5c8d1ed73012ea5c9ad4d58"
+      }
+    ]
+  },
+  "actions/checkout": "11d5960a326750d5838078e36cf38b85af677262",
+  "actions/setup-python": "a26af69be951a213d495a4c3e4e4022e16d87065",
+  "actions/cache": "0057852bfaa89a56745cba8c7296529d2fc39830",
+  "actions/upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02"
+}

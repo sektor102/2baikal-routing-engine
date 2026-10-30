@@ -1,0 +1,39 @@
+version: 1
+fallback: DIRECT
+proxy-group: '→ Remnawave'
+# A pinned release base is filled by the publisher. No invented live URL.
+publish-base: null
+# Unknown friend rules are reviewed. Known personal equivalents remain personal rules.
+friend-approved: []
+friend-denied: []
+# Used only to document new opt-ins by exact normalized "TYPE,value".
+# Example: friend-approved: ['DOMAIN-SUFFIX,virustotal.com']
+overrides:
+  - 'DOMAIN-SUFFIX,vivox.com,DIRECT'
+  - 'DOMAIN-SUFFIX,wardxp-mim.vivox.com,DIRECT'
+  - 'DOMAIN-SUFFIX,api.epicgames.dev,PROXY'
+  - 'DOMAIN-SUFFIX,steamcommunity.com,PROXY'
+# Explicit direct overlays must survive before aggregate proxy categories in HAPP.
+# Conflicting broad upstream entries cause a build failure, never silent route loss.
+protect-direct: true
+geosite-required:
+  - private
+  - category-ru
+  - ru-available-only-inside
+  - microsoft
+  - apple
+  - epicgames
+  - riot
+  - escapefromtarkov
+  - steam
+  - pinterest
+  - faceit
+  - ru-blocked
+  - google-play
+  - github
+  - youtube
+  - telegram
+  - twitter
+  - win-spy
+  - category-ads
+geoip-required: [private, direct, whitelist]

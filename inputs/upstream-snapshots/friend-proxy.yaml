@@ -1,0 +1,316 @@
+payload:
+  # #########################################################
+  # SECTION 1 — Blocked BY Roskomnadzor (Russia blocks these;
+  # need proxy to reach them FROM inside Russia)
+  # #########################################################
+
+  # =========================
+  # YouTube
+  # =========================
+  - DOMAIN-SUFFIX,youtube.com
+  - DOMAIN-SUFFIX,youtu.be
+  - DOMAIN-SUFFIX,youtubei.googleapis.com
+  - DOMAIN-SUFFIX,googlevideo.com
+  - DOMAIN-SUFFIX,ytimg.com
+  - DOMAIN-SUFFIX,yt3.ggpht.com
+  - DOMAIN-SUFFIX,gstatic.com
+
+  # =========================
+  # Virustotal
+  # =========================
+  - DOMAIN-SUFFIX,virustotal.com
+
+  # =========================
+  # Discord
+  # =========================
+  - DOMAIN-SUFFIX,discord.com
+  - DOMAIN-SUFFIX,discord.gg
+  - DOMAIN-SUFFIX,discordapp.com
+  - DOMAIN-SUFFIX,discordapp.net
+
+  # =========================
+  # Telegram (voice/video calls throttled)
+  # =========================
+  - DOMAIN-SUFFIX,telegram.org
+  - DOMAIN-SUFFIX,t.me
+
+  # =========================
+  # WhatsApp
+  # =========================
+  - DOMAIN-SUFFIX,whatsapp.com
+  - DOMAIN-SUFFIX,whatsapp.net
+
+  # =========================
+  # X (Twitter)
+  # =========================
+  - DOMAIN-SUFFIX,x.com
+  - DOMAIN-SUFFIX,twitter.com
+  - DOMAIN-SUFFIX,twimg.com
+
+  # =========================
+  # Meta (Instagram / Facebook / Messenger) - banned as "extremist" 2022
+  # =========================
+  - DOMAIN-SUFFIX,instagram.com
+  - DOMAIN-SUFFIX,cdninstagram.com
+  - DOMAIN-SUFFIX,facebook.com
+  - DOMAIN-SUFFIX,facebook.net
+  - DOMAIN-SUFFIX,fbcdn.net
+  - DOMAIN-SUFFIX,messenger.com
+
+  # =========================
+  # Signal
+  # =========================
+  - DOMAIN-SUFFIX,signal.org
+  - DOMAIN-SUFFIX,signal.me
+  - DOMAIN-SUFFIX,whispersystems.org
+
+  # =========================
+  # Viber
+  # =========================
+  - DOMAIN-SUFFIX,viber.com
+
+  # =========================
+  # Snapchat
+  # =========================
+  - DOMAIN-SUFFIX,snapchat.com
+
+  # =========================
+  # LinkedIn (blocked since 2016, data localization law)
+  # =========================
+  - DOMAIN-SUFFIX,linkedin.com
+  - DOMAIN-SUFFIX,licdn.com
+
+  # =========================
+  # BBC
+  # =========================
+  - DOMAIN-SUFFIX,bbc.com
+  - DOMAIN-SUFFIX,bbc.co.uk
+  - DOMAIN-SUFFIX,bbci.co.uk
+
+  # =========================
+  # Internet Archive / Google News
+  # =========================
+  - DOMAIN-SUFFIX,archive.org
+  - DOMAIN-SUFFIX,news.google.com
+
+  # =========================
+  # Roblox
+  # =========================
+  - DOMAIN-SUFFIX,roblox.com
+  - DOMAIN-SUFFIX,rbxcdn.com
+
+  # =========================
+  # Rutracker (RKN copyright blacklist since 2015)
+  # =========================
+  - DOMAIN-SUFFIX,rutracker.org
+  - DOMAIN-SUFFIX,rutracker.cc
+  - DOMAIN-SUFFIX,rutracker.net
+
+  # =========================
+  # Crypto (RKN blocks under domestic crypto-content rules)
+  # =========================
+  - DOMAIN-SUFFIX,binance.com
+  - DOMAIN-SUFFIX,cointelegraph.com
+
+  # =========================
+  # Reddit (unconfirmed current status - verify before relying on this)
+  # =========================
+  - DOMAIN-SUFFIX,reddit.com
+  - DOMAIN-SUFFIX,redd.it
+  - DOMAIN-SUFFIX,redditmedia.com
+  - DOMAIN-SUFFIX,redditstatic.com
+
+  # =========================
+  # Speedtest / Ookla (blocked 2025, cited as security threat)
+  # =========================
+  - DOMAIN-SUFFIX,speedtest.net
+  - DOMAIN-SUFFIX,ookla.com
+
+  # =========================
+  # BattlEye (likely routing/latency, not a confirmed RKN order)
+  # =========================
+  - DOMAIN-SUFFIX,battleye.com
+  - DOMAIN-SUFFIX,battleye.net
+  - DOMAIN-KEYWORD,battleye
+
+  # =========================
+  # Remnadocs
+  # =========================
+  - DOMAIN-SUFFIX,utils.docs.rw
+
+  # #########################################################
+  # SECTION 2 — Blocked FOR Russia (company/sanctions geo-fencing;
+  # these restrict Russian IPs/accounts, RKN isn't involved)
+  # #########################################################
+
+  # =========================
+  # OpenAI
+  # =========================
+  - DOMAIN-SUFFIX,chatgpt.com
+  - DOMAIN-SUFFIX,openai.com
+  - DOMAIN-SUFFIX,oaistatic.com
+  - DOMAIN-SUFFIX,oaiusercontent.com
+  - DOMAIN-SUFFIX,openaiapi-site.azureedge.net
+
+  # =========================
+  # Anthropic
+  # =========================
+  - DOMAIN-SUFFIX,claude.ai
+  - DOMAIN-SUFFIX,anthropic.com
+
+  # =========================
+  # Google AI
+  # =========================
+  - DOMAIN-SUFFIX,gemini.google.com
+  - DOMAIN-SUFFIX,aistudio.google.com
+  - DOMAIN-SUFFIX,generativelanguage.googleapis.com
+
+  # =========================
+  # Perplexity
+  # =========================
+  - DOMAIN-SUFFIX,perplexity.ai
+
+  # =========================
+  # xAI / Grok
+  # =========================
+  - DOMAIN-SUFFIX,x.ai
+  - DOMAIN-SUFFIX,grok.com
+
+  # =========================
+  # Cursor
+  # =========================
+  - DOMAIN-SUFFIX,cursor.com
+  - DOMAIN-SUFFIX,cursor.sh
+
+  # =========================
+  # GitHub (Copilot billing/features restricted for RU accounts)
+  # =========================
+  - DOMAIN-SUFFIX,github.com
+  - DOMAIN-SUFFIX,githubusercontent.com
+  - DOMAIN-SUFFIX,githubassets.com
+  - DOMAIN-SUFFIX,githubcopilot.com
+  - DOMAIN-SUFFIX,githubcopilotusercontent.com
+
+  # =========================
+  # VS Code (unconfirmed block, kept for reliability)
+  # =========================
+  - DOMAIN-SUFFIX,vscode.dev
+  - DOMAIN-SUFFIX,visualstudio.com
+  - DOMAIN-SUFFIX,visualstudio.microsoft.com
+
+  # =========================
+  # Hugging Face
+  # =========================
+  - DOMAIN-SUFFIX,huggingface.co
+
+  # =========================
+  # Vercel
+  # =========================
+  - DOMAIN-SUFFIX,vercel.com
+
+  # =========================
+  # netcup.de
+  # =========================
+  - DOMAIN-SUFFIX,customercontrolpanel.de
+  - DOMAIN-SUFFIX,netcup.com
+  - DOMAIN-SUFFIX,netcup.de
+
+  # =========================
+  # Ui.com
+  # =========================
+  - DOMAIN-SUFFIX,ui.com
+
+  # =========================
+  # Replicate
+  # =========================
+  - DOMAIN-SUFFIX,replicate.com
+
+  # =========================
+  # Spotify (exited Russia 2022)
+  # =========================
+  - DOMAIN-SUFFIX,spotify.com
+  - DOMAIN-SUFFIX,scdn.co
+
+  # =========================
+  # Notion (blocked RU accounts 2022)
+  # =========================
+  - DOMAIN-SUFFIX,notion.so
+  - DOMAIN-SUFFIX,notion.site
+
+  # =========================
+  # Figma (exited Russia 2022)
+  # =========================
+  - DOMAIN-SUFFIX,figma.com
+
+  # =========================
+  # Netflix (exited Russia 2022)
+  # =========================
+  - DOMAIN-SUFFIX,netflix.com
+  - DOMAIN-SUFFIX,nflxvideo.net
+
+  # =========================
+  # Intel (site geo-blocked, driver downloads restored 2023)
+  # =========================
+  - DOMAIN-SUFFIX,intel.com
+
+  # =========================
+  # Adobe (halted RU sales 2022)
+  # =========================
+  - DOMAIN-SUFFIX,adobe.com
+  - DOMAIN-SUFFIX,adobe.io
+
+  # =========================
+  # JetBrains (blocks RU downloads)
+  # =========================
+  - DOMAIN-SUFFIX,jetbrains.com
+
+  # =========================
+  # Autodesk
+  # =========================
+  - DOMAIN-SUFFIX,autodesk.com
+
+  # =========================
+  # Avast (stopped RU sales)
+  # =========================
+  - DOMAIN-SUFFIX,avast.com
+
+  # =========================
+  # PayPal (exited Russia 2022)
+  # =========================
+  - DOMAIN-SUFFIX,paypal.com
+
+  # #########################################################
+  # Process rules
+  # #########################################################
+  # -- Section 1 chatting --
+  - PROCESS-NAME,discord.exe
+  - PROCESS-NAME,telegram.exe
+  - PROCESS-NAME,whatsapp.exe
+  - PROCESS-NAME,Signal.exe
+  - PROCESS-NAME,WhatsApp.Root.exe
+
+  # -- Section 2 apps --
+  - PROCESS-NAME,chatgpt.exe
+  - PROCESS-NAME,claude.exe
+  - PROCESS-NAME,cursor.exe
+  - PROCESS-NAME,code.exe
+  - PROCESS-NAME,code-insiders.exe
+  - PROCESS-NAME,ChatGPT Classic.exe
+  - PROCESS-NAME,Spotify.exe
+  - PROCESS-NAME,Notion.exe
+  - PROCESS-NAME,Figma.exe
+  - PROCESS-NAME,IntelliJ IDEA.exe
+  - PROCESS-NAME,PyCharm.exe
+  - PROCESS-NAME,Photoshop.exe
+  - PROCESS-NAME,studio64.exe
+  - PROCESS-NAME,language_server.exe
+  - PROCESS-NAME,Antigravity.exe
+  
+  
+
+  # -- Section 3 games --
+  - PROCESS-NAME,WardogsLauncher-Shipping.exe
+  - PROCESS-NAME,WardogsClient-Win64-Shipping.exe
+
+  - PROCESS-NAME,AION2.exe
+  

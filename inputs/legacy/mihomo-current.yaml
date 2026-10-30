@@ -1,0 +1,163 @@
+mixed-port: 7890
+socks-port: 7891
+redir-port: 7892
+allow-lan: true
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+dns:
+  enable: true
+  use-hosts: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  default-nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+  fake-ip-filter:
+    - '*.lan'
+    - stun.*.*.*
+    - stun.*.*
+    - time.windows.com
+    - time.nist.gov
+    - time.apple.com
+    - time.asia.apple.com
+    - '*.openwrt.pool.ntp.org'
+    - pool.ntp.org
+    - ntp.ubuntu.com
+    - time1.apple.com
+    - time2.apple.com
+    - time3.apple.com
+    - time4.apple.com
+    - time5.apple.com
+    - time6.apple.com
+    - time7.apple.com
+    - time1.google.com
+    - time2.google.com
+    - time3.google.com
+    - time4.google.com
+    - api.joox.com
+    - joox.com
+    - '*.xiami.com'
+    - '*.msftconnecttest.com'
+    - '*.msftncsi.com'
+    - '+.xboxlive.com'
+    - '*.*.stun.playstation.net'
+    - xbox.*.*.microsoft.com
+    - '*.ipv6.microsoft.com'
+    - speedtest.cros.wr.pvp.net
+
+proxies: # LEAVE THIS LINE!
+
+proxy-groups:
+  - name: '→ Remnawave'
+    type: 'select'
+    proxies: # LEAVE THIS LINE!
+
+rules:
+  - 'DOMAIN-SUFFIX,beta.wardogs.zone,→ Remnawave'
+  - 'PROCESS-NAME,RazerAppEngine.exe,→ Remnawave'
+  - 'DOMAIN-SUFFIX,speedtest.net,→ Remnawave'
+  - 'DOMAIN-SUFFIX,wardxp-mim.vivox.com,DIRECT'
+  - 'DOMAIN-SUFFIX,vivox.com,DIRECT'
+  - 'PROCESS-NAME,TS4_x64.exe,→ Remnawave'
+  - 'PROCESS-NAME,ChatGPT Classic.exe,→ Remnawave'
+  - 'PROCESS-NAME,WardogsClient-Win64-Shipping.exe,→ Remnawave'
+  - 'DOMAIN-SUFFIX,newtis.info,DIRECT'
+  - 'DOMAIN-SUFFIX,shadps4.net,→ Remnawave'
+  - 'DOMAIN-SUFFIX,rutor.is,→ Remnawave'
+  - 'DOMAIN-SUFFIX,facebook.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,RuTracker.org,→ Remnawave'
+  - 'IP-CIDR,127.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,10.0.0.0/8,DIRECT,no-resolve'
+  - 'IP-CIDR,172.16.0.0/12,DIRECT,no-resolve'
+  - 'IP-CIDR,192.168.0.0/16,DIRECT,no-resolve'
+  - 'IP-CIDR,100.64.0.0/10,DIRECT,no-resolve'
+  - 'IP-CIDR,169.254.0.0/16,DIRECT,no-resolve'
+  - 'IP-CIDR,224.0.0.0/4,DIRECT,no-resolve'
+  - 'IP-CIDR,255.255.255.255/32,DIRECT,no-resolve'
+  - 'PROCESS-NAME,BsgLauncher.exe,DIRECT'
+  - 'PROCESS-NAME,EscapeFromTarkov.exe,DIRECT'
+  - 'PROCESS-NAME,EscapeFromTarkov_BE.exe,DIRECT'
+  - 'PROCESS-NAME,EscapeFromTarkovArena.exe,DIRECT'
+  - 'PROCESS-NAME,EscapeFromTarkovArena_BE.exe,DIRECT'
+  - 'PROCESS-NAME,BEService.exe,DIRECT'
+  - 'DOMAIN-SUFFIX,escapefromtarkov.com,DIRECT'
+  - 'DOMAIN-SUFFIX,battlestategames.com,DIRECT'
+  - 'DOMAIN-SUFFIX,eft-project.com,DIRECT'
+  - 'DOMAIN-SUFFIX,tarkov.ru,DIRECT'
+  - 'DOMAIN-SUFFIX,tarkov.cc,DIRECT'
+  - 'DOMAIN-SUFFIX,arena.tarkov.ru,DIRECT'
+  - 'DOMAIN-SUFFIX,prod.arena.tarkov.ru,DIRECT'
+  - 'DOMAIN-SUFFIX,prod.arena.tarkov.cc,DIRECT'
+  - 'PROCESS-NAME,Discord.exe,→ Remnawave'
+  - 'DOMAIN-SUFFIX,discord.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,discord.gg,→ Remnawave'
+  - 'DOMAIN-SUFFIX,discordapp.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,discordapp.net,→ Remnawave'
+  - 'DOMAIN-SUFFIX,discord.media,→ Remnawave'
+  - 'PROCESS-NAME,ChatGPT.exe,→ Remnawave'
+  - 'DOMAIN-SUFFIX,chatgpt.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,openai.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,oaistatic.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,oaiusercontent.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,ai.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,youtube.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,youtu.be,→ Remnawave'
+  - 'DOMAIN-SUFFIX,googlevideo.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,ytimg.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,ggpht.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,youtubei.googleapis.com,→ Remnawave'
+  - 'PROCESS-NAME,Telegram.exe,→ Remnawave'
+  - 'DOMAIN-SUFFIX,telegram.org,→ Remnawave'
+  - 'DOMAIN-SUFFIX,telegram.me,→ Remnawave'
+  - 'DOMAIN-SUFFIX,t.me,→ Remnawave'
+  - 'DOMAIN-SUFFIX,telegram-cdn.org,→ Remnawave'
+  - 'PROCESS-NAME,Spotify.exe,→ Remnawave'
+  - 'DOMAIN-SUFFIX,spotify.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,spotifycdn.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,scdn.co,→ Remnawave'
+  - 'DOMAIN-SUFFIX,instagram.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,cdninstagram.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,threads.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,fbcdn.net,→ Remnawave'
+  - 'DOMAIN-SUFFIX,whatsapp.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,whatsapp.net,→ Remnawave'
+  - 'DOMAIN-SUFFIX,twitch.tv,→ Remnawave'
+  - 'DOMAIN-SUFFIX,twitchcdn.net,→ Remnawave'
+  - 'DOMAIN-SUFFIX,jtvnw.net,→ Remnawave'
+  - 'DOMAIN-SUFFIX,steamcommunity.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,steamdb.info,→ Remnawave'
+  - 'DOMAIN-SUFFIX,github.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,githubusercontent.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,githubassets.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,objects.githubusercontent.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,jetbrains.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,visualstudio.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,vscode.dev,→ Remnawave'
+  - 'DOMAIN-SUFFIX,start.spring.io,→ Remnawave'
+  - 'DOMAIN-SUFFIX,claude.ai,→ Remnawave'
+  - 'DOMAIN-SUFFIX,claude.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,anthropic.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,grok.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,x.ai,→ Remnawave'
+  - 'DOMAIN-SUFFIX,accounts.x.ai,→ Remnawave'
+  - 'DOMAIN-SUFFIX,nexusmods.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,nexus-cdn.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,files.nexus-cdn.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,modrinth.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,minecraftforge.net,→ Remnawave'
+  - 'DOMAIN-SUFFIX,skmedix.pl,→ Remnawave'
+  - 'DOMAIN-SUFFIX,piston-meta.mojang.com,→ Remnawave'
+  - 'DOMAIN-SUFFIX,tarkov.help,→ Remnawave'
+  - 'DOMAIN-SUFFIX,hdrezka.inc,→ Remnawave'
+  - 'DOMAIN-SUFFIX,joyreactor.cc,→ Remnawave'
+  - 'DOMAIN-SUFFIX,rutor.info,→ Remnawave'
+  - 'PROCESS-NAME,msedge.exe,→ Remnawave'
+  - 'PROCESS-NAME,msedgewebview2.exe,→ Remnawave'
+  - 'PROCESS-NAME,Codex.exe,→ Remnawave'
+  - 'PROCESS-NAME,Wand.exe,→ Remnawave'
+  - 'DOMAIN-SUFFIX,tarkovtracker.org,→ Remnawave'
+  - 'MATCH,DIRECT'

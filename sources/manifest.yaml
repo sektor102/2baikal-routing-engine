@@ -1,0 +1,51 @@
+version: 1
+selected:
+  geosite: historical-geosite
+  geoip: historical-geoip
+sources:
+  - id: historical-geosite
+    url: https://raw.githubusercontent.com/runetfreedom/russia-blocked-geosite/release/geosite.dat
+    format: geosite
+    priority: 80
+    trust: historical-personal-source
+    mode: required
+    license: GPL-3.0; derived source notices in upstream
+    license-url: https://github.com/runetfreedom/russia-blocked-geosite/blob/main/LICENSE
+  - id: historical-geoip
+    url: https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geoip@release/geoip.dat
+    format: geoip
+    priority: 80
+    trust: historical-personal-source
+    mode: required
+    license: NOT-FOUND; includes third-party geodata, redistribution requires review
+    license-url: https://github.com/hydraponique/roscomvpn-geoip
+    pin-api: https://api.github.com/repos/hydraponique/roscomvpn-geoip/commits/release
+    pin-template: https://cdn.jsdelivr.net/gh/hydraponique/roscomvpn-geoip@{sha}/geoip.dat
+  - id: friend-geosite
+    url: https://git.5838.ru/Payroll3042/geosite-build/raw/branch/main/geosite.dat
+    format: geosite
+    priority: 90
+    trust: candidate-unverified-license
+    mode: audit-only
+    license: UNKNOWN
+  - id: friend-geoip
+    url: https://git.5838.ru/Payroll3042/geosite-build/raw/branch/main/geoip.dat
+    format: geoip
+    priority: 90
+    trust: candidate-unverified-license
+    mode: audit-only
+    license: UNKNOWN
+  - id: friend-proxy
+    url: https://git.5838.ru/Payroll3042/Clash-verge-config/raw/branch/main/rules.yaml
+    format: classical
+    priority: 60
+    trust: review-before-import
+    mode: review
+    license: UNKNOWN
+  - id: friend-direct
+    url: https://git.5838.ru/Payroll3042/Clash-verge-config/raw/branch/main/rules-direct.yaml
+    format: classical
+    priority: 60
+    trust: review-before-import
+    mode: review
+    license: UNKNOWN
