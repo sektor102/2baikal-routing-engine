@@ -1,4 +1,4 @@
-"""Prepare/restore/publish immutable Releases. Draft upload, then promote latest."""
+"""Publish immutable payloads and refresh copyable Remnawave release notes."""
 import argparse
 import hashlib
 import json
@@ -99,6 +99,108 @@ def prepare():
     return metadata,dest
 
 
+def code_block(text,language=''):
+    # Keep even embedded Markdown fences inside the copyable configuration.
+    import re
+    fence='`'*max(3,max((len(run)+1 for run in re.findall(r'`+',text)),default=0))
+    return fence+language+'\n'+text+('' if text.endswith('\n') else '\n')+fence
+
+
+def release_notes(meta,dest):
+    base=f"https://github.com/{meta['repository']}/releases/download/{meta['version']}"
+    policy=f"https://github.com/{meta['repository']}/edit/main/rules/policy.yaml"
+    files={name:(dest/name).read_text(encoding='utf-8')
+           for name in ['mihomo-config.yaml','happ-import-link.txt']}
+
+    def render(embedded):
+        def content(name,language):
+            if name in embedded: return code_block(files[name],language)
+            return 'Полный текст слишком большой для описания. [Открыть файл]('+base+'/'+name+') и скопировать его содержимое целиком.'
+        return f'''## Подключение к Remnawave
+
+Два готовых блока ниже: раскройте нужный и скопируйте содержимое кнопкой в правом верхнем углу кода.
+
+**Файлы для подключения:** [Mihomo YAML]({base}/mihomo-config.yaml) · [HAPP routing]({base}/happ-import-link.txt)
+
+<details>
+<summary><b>Mihomo — готовый шаблон для Remnawave</b></summary>
+
+1. Remnawave → Подписка → Mihomo → ваш шаблон **2Baikal**.
+2. Замените содержимое редактора полным YAML ниже и сохраните. Сохраните оба маркера `# LEAVE THIS LINE!`: серверы подставляет Remnawave.
+3. Назначьте этот шаблон ответу Mihomo своей подписки, если ещё не назначен. В Clash Verge обновите обычную подписку Remnawave и выберите рабочий сервер в группе `→ Remnawave`.
+
+{content('mihomo-config.yaml','yaml')}
+
+</details>
+
+<details>
+<summary><b>HAPP — готовое значение заголовка routing</b></summary>
+
+1. Remnawave → Подписка → Настройки → Заголовки ответа.
+2. Замените значение заголовка `routing` строкой ниже целиком и сохраните. Нужна сама строка `happ://routing/add/…`, а не HTTPS-адрес файла.
+3. В HAPP обновите подписку, включите профиль **2Baikal-Routing**, дождитесь загрузки геофайлов и выполните Reconnect. В JSON-подписке профиль доставляется вместе с подпиской.
+
+{content('happ-import-link.txt','text')}
+
+</details>
+
+<details>
+<summary>Как добавить сайт, домен или процесс</summary>
+
+Откройте [rules/policy.yaml → редактировать]({policy}) и добавьте строки в существующий список `overrides`. Существующие строки оставьте.
+
+```yaml
+  - 'DOMAIN-SUFFIX,example.com,DIRECT'  # сайт и все поддомены напрямую
+  - 'DOMAIN,api.example.org,PROXY'     # только этот домен через прокси
+  - 'PROCESS-NAME,MyApp.exe,DIRECT'    # процесс Windows напрямую
+  - 'PROCESS-NAME,MyGame.exe,PROXY'    # процесс Windows через прокси
+```
+
+Это примеры: замените домены и имена процессов своими. Пишите домен без `https://`, пути и порта. Имя процесса берите в Диспетчере задач Windows → Подробности. Правила процессов работают только в Mihomo на ПК; для перехвата трафика приложений обычно нужен TUN.
+
+Сохраните коммит в **main** и дождитесь зелёного Actions. При изменении правил появится новый Release. Перенесите из него YAML и строку HAPP в Remnawave, затем обновите подписки клиентов. Обновление GitHub само по себе не меняет шаблоны панели.
+
+Если сборка сообщает о конфликте, новая политика не публикуется. Блокировки имеют приоритет; некоторые пересечения DIRECT/PROXY требуют согласования из-за порядка групп HAPP.
+
+</details>
+
+<details>
+<summary>Обновления, проверки и дополнительные ассеты</summary>
+
+GitHub проверяет источники каждые 6 часов и публикует только изменившуюся проверенную политику. URL внутри профилей закреплены за этим релизом. Для полностью автоматического обновления нужен отдельный синхронизатор GitHub → Remnawave; сейчас его нет. `profile-update-interval: 6` задаёт клиентам 6 часов, а в Clash Verge вручную задаётся 360 минут.
+
+Остальные ассеты — базы, провайдеры правил, отчёты и резервные форматы. Конфиги загружают базы и провайдеры по ссылкам, поэтому удалить их и оставить только два файла нельзя без изменения устройства сборки. Для вставки в панель достаточно двух блоков выше.
+
+[Полный архив]({base}/2baikal-routing.zip) · [SHA256SUMS]({base}/SHA256SUMS) · [Проверки]({base}/validation.json) · [Изменения]({base}/changelog.md)
+
+Исходных личных правил: {meta['counts']['personal']}. Перед публикацией проверены схемы, контрольные маршруты и конфиги штатными Mihomo/Xray. Проверка HAPP на самом iPhone остаётся ручной.
+
+</details>
+'''
+    embedded=set(files)
+    body=render(embedded)
+    # Leave room below GitHub's body limits as the policy grows. Never truncate
+    # a configuration: fall back to an exact-version download link instead.
+    for name in ['mihomo-config.yaml','happ-import-link.txt']:
+        if len(body.encode('utf-8'))<=60_000: break
+        embedded.remove(name)
+        body=render(embedded)
+    return body
+
+
+def refresh_notes(repository,meta,dest,existing,body):
+    # A spoiler must show the bytes actually served by this published release.
+    for name in ['mihomo-config.yaml','happ-import-link.txt']:
+        assets=[a for a in existing['assets'] if a['name']==name]
+        if len(assets)!=1 or assets[0].get('digest')!='sha256:'+digest(dest/name):
+            raise Invalid('Published configuration differs from release notes: '+name)
+    if existing.get('body')!=body:
+        api('/repos/'+repository+'/releases/'+str(existing['id']),'PATCH',{'body':body})
+        print('Updated Remnawave spoilers; release assets and LastUpdated unchanged')
+    else:
+        print('Remnawave release notes unchanged')
+
+
 def publish(repository,commit):
     meta,dest=prepare()
     if not meta.get('publishable') or meta.get('repository')!=repository:
@@ -106,26 +208,23 @@ def publish(repository,commit):
     head=api('/repos/'+repository+'/git/ref/heads/main')['object']['sha']
     if head!=commit: raise Invalid('main moved during build; refusing stale publication')
     result=read_json(ROOT/'reports/build-result.json')
-    if not result['changed']:
-        print('Payload unchanged; no release, no LastUpdated change')
-        return
     tag=meta['version']
+    body=release_notes(meta,dest)
     try:
         existing=api('/repos/'+repository+'/releases/tags/'+tag)
     except urllib.error.HTTPError as exc:
         if exc.code!=404: raise
         existing=None
     if existing and not existing['draft']:
+        refresh_notes(repository,meta,dest,existing,body)
+        if not result['changed']: print('Payload unchanged; no release, no LastUpdated change')
         print('Immutable version already published:',existing['html_url'])
         return
     if existing:
         # Do not overwrite partially uploaded drafts automatically. A maintainer
         # can inspect/remove the draft and retry; the previous latest stays valid.
         raise Invalid('Incomplete draft exists; inspect it before retry')
-    body=('Verified DEFAULT DIRECT routing for HAPP iOS and Mihomo Windows.\n\n'
-          f"{meta['counts']['personal']} personal input rules; binaries and golden routing validated.\n\n"
-          'See validation.json, baseline.json, conflicts.json, review.json and SHA256SUMS.\n'
-          'HAPP changes require import and reconnect; native iOS device test remains manual.')
+    if not result['changed']: raise Invalid('Unchanged payload has no published release')
     release=api('/repos/'+repository+'/releases','POST',
                 {'tag_name':tag,'target_commitish':commit,'name':'2Baikal '+tag,
                  'body':body,'draft':True,'prerelease':False})
