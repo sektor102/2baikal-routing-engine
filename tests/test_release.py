@@ -14,6 +14,7 @@ class ReleaseNotesTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.dest=pathlib.Path(self.temp.name)
         self.files={'mihomo-config.yaml':'proxies: # LEAVE THIS LINE!\nrules: [MATCH,DIRECT]\n',
+                    'mihomo-router-config.yaml':"find-process-mode: 'off'\nproxies: # LEAVE THIS LINE!\nrules: [MATCH,DIRECT]\n",
                     'happ-import-link.txt':'happ://routing/add/ZXhhbXBsZQ==\n'}
         for name,text in self.files.items():
             (self.dest/name).write_text(text,encoding='utf-8',newline='\n')

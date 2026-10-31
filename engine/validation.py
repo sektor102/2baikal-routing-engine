@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from .compiler import check_golden, happ_rule_order
+from .compiler import check_golden, check_router_golden, happ_rule_order
 from .geodata import Database
 from .io import digest, load_inputs, load_yaml, read_json, validate_happ, write_json
 from .model import Invalid, Rule, parse_mihomo
@@ -48,11 +48,12 @@ def expanded_mihomo(directory):
 def mihomo_test(dist,mihomo,geoip_path):
     dist=Path(dist)
     logs=[]
-    for name in ['config.yaml','config-doh-optional.yaml']:
+    for family,name in [('mihomo','config.yaml'),('mihomo','config-doh-optional.yaml'),
+                        ('mihomo-router','config.yaml')]:
         with tempfile.TemporaryDirectory(prefix='2baikal-mihomo-',dir=dist.parent/'.cache') as temp:
             home=Path(temp)
-            shutil.copytree(dist/'mihomo/providers',home/'providers')
-            config=load_yaml(dist/'mihomo'/name)
+            shutil.copytree(dist/family/'providers',home/'providers')
+            config=load_yaml(dist/family/name)
             # Test only: blackhole-type reject mock group, no subscription or listeners.
             config['proxies']=[{'name':'MOCK','type':'reject'}]
             config['proxy-groups']=[{'name':'→ Remnawave','type':'select','proxies':['MOCK']}]
@@ -68,7 +69,7 @@ def mihomo_test(dist,mihomo,geoip_path):
             shutil.copyfile(geoip_path,home/'geoip.dat')
             result=subprocess.run([str(mihomo),'-t','-d',str(home),'-f',str(home/'test.yaml')],
                                   capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=120)
-            logs.append({'profile':name,'returncode':result.returncode,'output':result.stdout+result.stderr})
+            logs.append({'profile':family+'/'+name,'returncode':result.returncode,'output':result.stdout+result.stderr})
             if result.returncode: raise Invalid('Mihomo -t failed: '+result.stdout+result.stderr)
             if 'parse classical rule' in (result.stdout+result.stderr).lower():
                 raise Invalid('Mihomo silently dropped an invalid classical rule')
@@ -127,10 +128,17 @@ def validate(root,mihomo=None,xray=None,require_binaries=False):
     geoip.require({r.value for r in happ_rule_order(profile) if r.kind=='GEOIP'})
     rules=expanded_mihomo(dist/'mihomo')
     rows=check_golden(rules,profile,site,geoip)
+    router=expanded_mihomo(dist/'mihomo-router')
+    if load_yaml(dist/'mihomo-router/config.yaml').get('find-process-mode')!='off':
+        raise Invalid('Router process lookup must be off')
+    if any(r.kind=='PROCESS-NAME' for r in router):
+        raise Invalid('Process rule leaked into router output')
+    rows+=check_router_golden(router,site,geoip)
     bad=[r for r in rows if r['actual']!=r['expected']]
     if bad: raise Invalid('Rendered output routing regression: '+json.dumps(bad))
     _,_,_,personal,_,_=load_inputs(root)
     output_keys={(r.kind,r.value,r.action) for r in rules}
+    router_keys={(r.kind,r.value,r.action) for r in router}
     ios_keys={(r.kind,r.value,r.action) for r in happ_rule_order(profile)}
     coverage=[]
     for original in personal:
@@ -139,11 +147,15 @@ def validate(root,mihomo=None,xray=None,require_binaries=False):
             database=site if original.kind=='GEOSITE' else geoip
             members={(r.kind,r.value,original.action) for r in database.rules(original.value,original.action)}
             preserved=members.issubset(output_keys)
-        else: preserved=key in output_keys
+            router_preserved=members.issubset(router_keys)
+        else:
+            preserved=key in output_keys
+            router_preserved=original.kind=='PROCESS-NAME' or key in router_keys
         ios_preserved=original.kind=='PROCESS-NAME' or key in ios_keys
         coverage.append({'rule':original.record(),'pc':preserved,'ios':ios_preserved,
-                         'ios_applicable':original.kind!='PROCESS-NAME'})
-    if any(not r['pc'] or not r['ios'] for r in coverage):
+                         'ios_applicable':original.kind!='PROCESS-NAME',
+                         'router':router_preserved,'router_applicable':original.kind!='PROCESS-NAME'})
+    if any(not r['pc'] or not r['ios'] or not r['router'] for r in coverage):
         raise Invalid('Personal input coverage lost in rendered output')
     if require_binaries and (not mihomo or not xray): raise Invalid('Both Mihomo and Xray required for release validation')
     result={'golden_cases':len(rows),'golden_failures':len(bad),'schema':'passed',

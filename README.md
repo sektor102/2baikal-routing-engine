@@ -1,16 +1,17 @@
 # 2Baikal Routing Engine
 
-Единая политика DEFAULT DIRECT для **Mihomo на Windows** и **HAPP на iPhone**. Четыре исходных пользовательских файла сохранены побайтно в `inputs/`. Ветка остаётся **main** по решению владельца. Старый Shadowrocket-проект сохранён в `backup/shadowrocket-before-2baikal-2026-10-31`.
+Единая политика DEFAULT DIRECT для **Mihomo PC на Windows**, **Mihomo Router** и **HAPP на iPhone**. Четыре исходных пользовательских файла сохранены побайтно в `inputs/`. Ветка остаётся **main** по решению владельца. Старый Shadowrocket-проект сохранён в `backup/shadowrocket-before-2baikal-2026-10-31`.
 
 ## Готовая сборка
 
-**[Открыть последний Release](https://github.com/sektor102/2baikal-routing-engine/releases/latest)**: в описании два раскрывающихся блока с полным YAML для Remnawave Mihomo и готовой строкой заголовка `routing` для HAPP. Код можно скопировать кнопкой. Если будущий конфиг превысит размер описания GitHub, вместо обрезанного текста будет ссылка на полный файл именно этого релиза.
+**[Открыть последний Release](https://github.com/sektor102/2baikal-routing-engine/releases/latest)**: в описании три раскрывающихся блока: Mihomo PC, Mihomo Router и строка `routing` для HAPP. Код можно скопировать кнопкой. Если будущий конфиг превысит размер описания GitHub, вместо обрезанного текста будет ссылка на полный файл именно этого релиза.
 
 Ссылки начинают работать только после успешной публикации:
 
 - [HAPP JSON](https://github.com/sektor102/2baikal-routing-engine/releases/latest/download/happ-routing.json)
 - [HAPP import link](https://github.com/sektor102/2baikal-routing-engine/releases/latest/download/happ-import-link.txt)
 - [Mihomo YAML](https://github.com/sektor102/2baikal-routing-engine/releases/latest/download/mihomo-config.yaml)
+- [Mihomo Router YAML](https://github.com/sektor102/2baikal-routing-engine/releases/latest/download/mihomo-router-config.yaml)
 - [Архив с локальными провайдерами](https://github.com/sektor102/2baikal-routing-engine/releases/latest/download/2baikal-routing.zip)
 - [SHA256SUMS](https://github.com/sektor102/2baikal-routing-engine/releases/latest/download/SHA256SUMS)
 - [Результаты проверки](https://github.com/sektor102/2baikal-routing-engine/releases/latest/download/validation.json)
@@ -25,7 +26,26 @@
 
 **HAPP через Remnawave.** Подписка → Настройки → Заголовки ответа → `routing`: вставить полную строку `happ://routing/add/…` из описания релиза или `happ-import-link.txt`, сохранить. В HAPP обновить подписку, включить профиль `2Baikal-Routing`, дождаться геофайлов и переподключиться. В поле вставляется содержимое файла, не его HTTPS-адрес.
 
-**Автообновление.** GitHub проверяет upstream каждые 6 часов, но не меняет шаблоны Remnawave. После нового релиза нужно перенести оба блока в панель либо отдельно настроить синхронизатор GitHub → Remnawave через API; такого синхронизатора пока нет. `profile-update-interval: 6` в заголовках панели означает 6 часов; для Clash Verge можно задать 360 минут в настройках подписки. Интервал провайдеров не переключает закреплённую версию релиза. Дополнительные ассеты нужны по URL из конфигов: удаление баз и провайдеров сломает загрузку, поэтому для пользователя выделены два блока, а технические файлы сохранены.
+**Mihomo Router.** `mihomo-router-config.yaml` собирается отдельно: домены, DOMAIN-SUFFIX, GeoSite, IPv4/IPv6 и CIDR сохранены; PROCESS-NAME и Windows-процессы исключены при сборке. `find-process-mode: off` отключает поиск процессов самим ядром. Базовый DNS/fake-ip сохранён. В Remnawave создать отдельный шаблон Mihomo `Router` и назначить его подписке роутера. Импортировать шаблон PC и фильтровать процессы на роутере не требуется. Общие доменные/IP-провайдеры PC и Router публикуются один раз.
+
+**Автообновление.** GitHub проверяет upstream каждые 6 часов. После успешной публикации `scripts/sync_remnawave.py` может обновлять через API шаблоны PC, Router и заголовок HAPP. Для включения один раз настроить Secrets ниже. Без них шаг пропускается и работает ручной импорт. `profile-update-interval: 6` означает 6 часов; в Clash Verge можно задать 360 минут. Интервал провайдеров не переключает закреплённую версию релиза.
+
+## Автосинхронизация Remnawave через GitHub Actions
+
+В GitHub → Settings → Secrets and variables → Actions добавить четыре **repository secrets**:
+
+| Secret | Значение |
+| --- | --- |
+| `REMNAWAVE_URL` | Прямой HTTPS-адрес панели без `/dashboard` и `/api` |
+| `REMNAWAVE_API_TOKEN` | Отдельный API-ключ Remnawave |
+| `REMNAWAVE_MIHOMO_TEMPLATE_UUID` | UUID шаблона Mihomo для PC из адреса редактора |
+| `REMNAWAVE_ROUTER_TEMPLATE_UUID` | UUID отдельного шаблона Mihomo Router |
+
+API-ключу нужны только GET/PATCH `/api/subscription-templates` (GET конкретного UUID) и GET/PATCH `/api/subscription-settings`. Настройка проверена по контрактам Remnawave 3.4.5: YAML передаётся в `encodedTemplateYaml` как Base64; `routing` меняется внутри `customResponseHeaders`. Существующие API-ключи не переиспользуются и не изменяются. Ключ не хранится в репозитории или артефактах.
+
+Actions запускает синхронизацию только после проверок и публикации в main, включая повторный запуск без нового релиза. Перед записью сверяются SHA256 трёх профилей с опубликованными ассетами и текущий HEAD. Меняются только YAML двух выбранных шаблонов и `routing`; прочие заголовки, настройки HWID, пользователи, серверы и выбор шаблонов не меняются. Новый HAPP с меньшим LastUpdated либо другим именем не перезаписывает действующий профиль. Все записи подтверждаются чтением API; при сбое выполняется возврат прежних значений, если они не были изменены другим администратором. При невозможности подтвердить откат Actions завершается ошибкой для ручной проверки.
+
+После настройки выполнить Actions → Verify and publish 2Baikal routing → Run workflow. Проверить шаг **Sync published PC, Router and HAPP profiles to Remnawave**. Затем обновить подписки клиентов; для HAPP нужен Reconnect. Роутеру надо назначить шаблон Router, ПК — шаблон PC. Автосинхронизация сама не меняет назначение шаблонов.
 
 UseChunkFiles, GlobalProxy=false, RouteOrder, DNS, DnsHosts, DomainStrategy и FakeDNS сохранены. GeoSite содержит только используемые категории. Расход памяти iOS не измерен — нужен тест на телефоне. Windows-процессы в HAPP отсутствуют.
 

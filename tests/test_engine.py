@@ -13,7 +13,7 @@ from engine.io import load_inputs,load_yaml,read_json,validate_happ,write_json
 from engine.model import Invalid,Rule,covers,domain,normalize,parse_happ,parse_mihomo,route
 from engine.network import fetch_one
 from engine.policy import classify
-from engine.validation import validate
+from engine.validation import validate,expanded_mihomo
 from helpers import PROJECT,fixture,site_bytes,ip_bytes
 
 
@@ -274,6 +274,24 @@ class BuildTests(unittest.TestCase):
         build(self.root)
         pc=load_yaml(self.root/'dist/mihomo/config.yaml')
         self.assertTrue(all(p['format']!='mrs' for p in pc['rule-providers'].values() if p['behavior']=='classical'))
+
+    def test_router_keeps_domains_ips_and_disables_processes(self):
+        build(self.root)
+        router=load_yaml(self.root/'dist/mihomo-router/config.yaml')
+        pc=expanded_mihomo(self.root/'dist/mihomo')
+        rules=expanded_mihomo(self.root/'dist/mihomo-router')
+        self.assertEqual(router['find-process-mode'],'off')
+        self.assertEqual({r.key for r in rules},{r.key for r in pc if r.kind!='PROCESS-NAME'})
+        self.assertTrue(any(r.kind=='DOMAIN-SUFFIX' for r in rules))
+        self.assertTrue(any(r.kind in {'IP-CIDR','IP-CIDR6'} for r in rules))
+        self.assertEqual(route(rules,host='example.net',process='WardogsClient-Win64-Shipping.exe')[0],'DIRECT')
+        self.assertEqual(route(pc,host='example.net',process='WardogsClient-Win64-Shipping.exe')[0],'PROXY')
+        self.assertEqual((self.root/'dist/mihomo-router/config.yaml').read_text().count('# LEAVE THIS LINE!'),2)
+        pc_config=load_yaml(self.root/'dist/mihomo/config.yaml')
+        self.assertLess(set(router['rule-providers']),set(pc_config['rule-providers']))
+        for name in router['rule-providers']:
+            for file in (self.root/'dist/mihomo-router/providers').glob(name+'.*'):
+                self.assertEqual(file.read_bytes(),(self.root/'dist/mihomo/providers'/file.name).read_bytes())
 
     def test_secret_scan(self):
         file=self.root/'secret.yaml'

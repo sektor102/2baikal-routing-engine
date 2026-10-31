@@ -158,8 +158,10 @@ def provider(out,name,rules,mihomo):
     return definitions
 
 
-def make_mihomo(base,raw,rules,site_db,ip_db,out,mihomo,geoip_url,base_url):
+def make_mihomo(base,raw,rules,site_db,ip_db,out,mihomo,geoip_url,base_url,router=False):
     config=copy.deepcopy(base)
+    if router:
+        config['find-process-mode']='off'
     config['proxies']=None
     config['geo-auto-update']=False
     config['rule-providers']={}
@@ -187,6 +189,9 @@ def make_mihomo(base,raw,rules,site_db,ip_db,out,mihomo,geoip_url,base_url):
         else:
             subset=group[2]
             name=f'{i:03d}-p{group[1][0]}-{action.lower()}'
+        if router:
+            subset=[r for r in subset if r.kind!='PROCESS-NAME']
+            if not subset: continue
         definitions=provider(out,name,subset,mihomo)
         for name,behavior,fmt in definitions:
             relative=f'providers/{name}.{fmt}'
@@ -201,6 +206,7 @@ def make_mihomo(base,raw,rules,site_db,ip_db,out,mihomo,geoip_url,base_url):
     text=re.sub(r'^(\s+)proxies: null$',r'\1proxies: # LEAVE THIS LINE!',text,flags=re.M)
     if text.count('# LEAVE THIS LINE!')!=2: raise Invalid('Lost Mihomo client insertion markers')
     (out/'config.yaml').write_text(text,encoding='utf-8',newline='\n')
+    if router: return config
     optional=copy.deepcopy(config)
     optional.setdefault('hosts',{})['common.dot.dns.yandex.net']='77.88.8.8'
     dns=optional.setdefault('dns',{})
@@ -250,6 +256,23 @@ def check_golden(pc,profile,site,geoip):
         actual,_=(route(pc,ip='2001:b28:f23d::1',geosite=site,geoip=geoip) if client=='pc' else
                   route_happ(profile,ip='2001:b28:f23d::1',geosite=site,geoip=geoip))
         rows.append({'client':client,'ip':'2001:b28:f23d::1','expected':'PROXY','actual':actual})
+    return rows
+
+
+def check_router_golden(rules,site,geoip):
+    rows=[]
+    for expected,hosts in [('PROXY',GOLDEN_PROXY),('DIRECT',GOLDEN_DIRECT)]:
+        for host in hosts:
+            actual,_=route(rules,host=host,geosite=site,geoip=geoip)
+            rows.append({'client':'router','host':host,'expected':expected,'actual':actual})
+    for ip in GOLDEN_IPS+['2001:b28:f23d::1']:
+        expected='PROXY' if ip=='2001:b28:f23d::1' else 'DIRECT'
+        actual,_=route(rules,ip=ip,geosite=site,geoip=geoip)
+        rows.append({'client':'router','ip':ip,'expected':expected,'actual':actual})
+    actual,_=route(rules,host='example.net',process='WardogsClient-Win64-Shipping.exe',
+                   geosite=site,geoip=geoip)
+    rows.append({'client':'router','host':'example.net','scenario':'PC process has no router effect',
+                 'expected':'DIRECT','actual':actual})
     return rows
 
 
@@ -338,12 +361,14 @@ def build(root,mihomo=None,repository=None,previous=None):
         out=Path(temporary)
         (out/'happ').mkdir()
         (out/'mihomo').mkdir()
+        (out/'mihomo-router').mkdir()
         (out/'geosite.dat').write_bytes(compact)
         write_json(out/'happ/routing.json',profile)
         make_mihomo(base,raw,rules,site_compact,ip,out/'mihomo',mihomo,geoip_url,base_url)
+        make_mihomo(base,raw,rules,site_compact,ip,out/'mihomo-router',mihomo,geoip_url,base_url,router=True)
         # Release assets are flat archives; URLs inside config point at flat asset names.
         if base_url:
-            for file in (out/'mihomo').glob('config*.yaml'):
+            for file in [*(out/'mihomo').glob('config*.yaml'),*(out/'mihomo-router').glob('config*.yaml')]:
                 file.write_text(file.read_text(encoding='utf-8').replace(base_url+'/mihomo/providers/',base_url+'/'),encoding='utf-8',newline='\n')
         # Decide no-op from generated payload bytes, not source sizes, timestamps,
         # irrelevant categories, or compiler source comments. Normalize the two
@@ -364,7 +389,7 @@ def build(root,mihomo=None,repository=None,previous=None):
         final_tag='routing-'+fingerprint[:20]
         changed=fingerprint!=prev.get('fingerprint')
         updated=prev.get('updated_at') if not changed else str(max(int(time.time()),int(prev.get('updated_at','0'))+1))
-        for file in (out/'mihomo').glob('config*.yaml'):
+        for file in [*(out/'mihomo').glob('config*.yaml'),*(out/'mihomo-router').glob('config*.yaml')]:
             file.write_text(file.read_text(encoding='utf-8').replace(tag,final_tag),encoding='utf-8',newline='\n')
         profile['Geositeurl']=profile['Geositeurl'].replace(tag,final_tag)
         profile['LastUpdated']=updated
@@ -379,7 +404,9 @@ def build(root,mihomo=None,repository=None,previous=None):
                  'geoip':{'url':geoip_url,'sha256':byid[selected['geoip']]['sha256'],
                           'bytes':ip.size,'raw_database_redistributed':False,
                           'mihomo_derived_categories':sorted(ips)},
-                 'counts':{'personal':len(personal),'compiled':len(rules),'review':dict(Counter(r['status'] for r in review))},
+                 'counts':{'personal':len(personal),'compiled':len(rules),
+                           'router_compiled':sum(r.kind!='PROCESS-NAME' for r in rules),
+                           'review':dict(Counter(r['status'] for r in review))},
                  'upstreams':upstream,'input_hashes':inventory,
                  'limitations':['HAPP native iOS execution requires device testing.',
                                 'Optional DoH validated syntactically; network/device DNS leakage is not proven.']}

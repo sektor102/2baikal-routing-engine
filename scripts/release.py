@@ -61,6 +61,9 @@ def prepare():
         raise Invalid('Routing/schema validation missing')
     if not isinstance(validation.get('mihomo'),list) or not isinstance(validation.get('xray'),dict):
         raise Invalid('Both native binary checks required')
+    expected={'mihomo/config.yaml','mihomo/config-doh-optional.yaml','mihomo-router/config.yaml'}
+    if {row.get('profile') for row in validation['mihomo']}!=expected:
+        raise Invalid('Native Mihomo checks required for PC, optional DoH and Router')
     for row in validation['mihomo']:
         if row['returncode']: raise Invalid('Mihomo validation failed')
     if validation['xray']['returncode']: raise Invalid('Xray validation failed')
@@ -78,12 +81,15 @@ def prepare():
     if dest.exists(): shutil.rmtree(dest)
     dest.mkdir()
     names={'happ/routing.json':'happ-routing.json','happ/import-link.txt':'happ-import-link.txt',
-           'mihomo/config.yaml':'mihomo-config.yaml','mihomo/config-doh-optional.yaml':'mihomo-config-doh-optional.yaml'}
+           'mihomo/config.yaml':'mihomo-config.yaml','mihomo/config-doh-optional.yaml':'mihomo-config-doh-optional.yaml',
+           'mihomo-router/config.yaml':'mihomo-router-config.yaml'}
     for file in sorted(dist.rglob('*')):
         if not file.is_file() or file.name=='SHA256SUMS': continue
         rel=file.relative_to(dist).as_posix()
         name=names.get(rel,file.name)
-        if (dest/name).exists(): raise Invalid('Release asset filename collision: '+name)
+        if (dest/name).exists():
+            if digest(dest/name)!=digest(file): raise Invalid('Release asset filename collision: '+name)
+            continue  # PC and Router share byte-identical domain/IP providers.
         shutil.copyfile(file,dest/name)
     shutil.copyfile(ROOT/'reports/validation.json',dest/'validation.json')
     for name in ['coverage-diff.json','changelog.md','twitter.json','category-overlaps.json','provider-diff.json','personal-route-collisions.json']:
@@ -110,7 +116,7 @@ def release_notes(meta,dest):
     base=f"https://github.com/{meta['repository']}/releases/download/{meta['version']}"
     policy=f"https://github.com/{meta['repository']}/edit/main/rules/policy.yaml"
     files={name:(dest/name).read_text(encoding='utf-8')
-           for name in ['mihomo-config.yaml','happ-import-link.txt']}
+           for name in ['mihomo-config.yaml','mihomo-router-config.yaml','happ-import-link.txt']}
 
     def render(embedded):
         def content(name,language):
@@ -118,18 +124,29 @@ def release_notes(meta,dest):
             return 'Полный текст слишком большой для описания. [Открыть файл]('+base+'/'+name+') и скопировать его содержимое целиком.'
         return f'''## Подключение к Remnawave
 
-Два готовых блока ниже: раскройте нужный и скопируйте содержимое кнопкой в правом верхнем углу кода.
+Три готовых блока ниже: раскройте нужный и скопируйте содержимое кнопкой в правом верхнем углу кода.
 
-**Файлы для подключения:** [Mihomo YAML]({base}/mihomo-config.yaml) · [HAPP routing]({base}/happ-import-link.txt)
+**Файлы для подключения:** [Mihomo PC]({base}/mihomo-config.yaml) · [Mihomo Router]({base}/mihomo-router-config.yaml) · [HAPP routing]({base}/happ-import-link.txt)
 
 <details>
-<summary><b>Mihomo — готовый шаблон для Remnawave</b></summary>
+<summary><b>Mihomo PC — шаблон для Clash Verge на Windows</b></summary>
 
-1. Remnawave → Подписка → Mihomo → ваш шаблон **2Baikal**.
+1. Remnawave → Подписка → Mihomo → ваш шаблон для ПК (**Default** или **2Baikal**).
 2. Замените содержимое редактора полным YAML ниже и сохраните. Сохраните оба маркера `# LEAVE THIS LINE!`: серверы подставляет Remnawave.
 3. Назначьте этот шаблон ответу Mihomo своей подписки, если ещё не назначен. В Clash Verge обновите обычную подписку Remnawave и выберите рабочий сервер в группе `→ Remnawave`.
 
 {content('mihomo-config.yaml','yaml')}
+
+</details>
+
+<details>
+<summary><b>Mihomo Router — домены, поддомены и IP/CIDR, без процессов</b></summary>
+
+1. Remnawave → Подписка → Mihomo → отдельный шаблон **Router**.
+2. Вставьте полный YAML ниже и сохраните. Маркеры `# LEAVE THIS LINE!` нужны для подстановки серверов панелью.
+3. Назначьте Router подписке своего роутера и обновите её. Домены, DOMAIN-SUFFIX, категории GeoSite и IP/CIDR сохранены. PROCESS-NAME отсутствует; поиск процессов отключён (`find-process-mode: off`). Отфильтровывать Windows-процессы на роутере не требуется.
+
+{content('mihomo-router-config.yaml','yaml')}
 
 </details>
 
@@ -158,7 +175,7 @@ def release_notes(meta,dest):
 
 Это примеры: замените домены и имена процессов своими. Пишите домен без `https://`, пути и порта. Имя процесса берите в Диспетчере задач Windows → Подробности. Правила процессов работают только в Mihomo на ПК; для перехвата трафика приложений обычно нужен TUN.
 
-Сохраните коммит в **main** и дождитесь зелёного Actions. При изменении правил появится новый Release. Перенесите из него YAML и строку HAPP в Remnawave, затем обновите подписки клиентов. Обновление GitHub само по себе не меняет шаблоны панели.
+Сохраните коммит в **main** и дождитесь зелёного Actions. При изменении правил появится новый Release. Настроенный синхронизатор Actions перенесёт PC, Router и HAPP в Remnawave; без настройки перенесите нужные блоки вручную. Затем обновите подписки клиентов.
 
 Если сборка сообщает о конфликте, новая политика не публикуется. Блокировки имеют приоритет; некоторые пересечения DIRECT/PROXY требуют согласования из-за порядка групп HAPP.
 
@@ -167,9 +184,9 @@ def release_notes(meta,dest):
 <details>
 <summary>Обновления, проверки и дополнительные ассеты</summary>
 
-GitHub проверяет источники каждые 6 часов и публикует только изменившуюся проверенную политику. URL внутри профилей закреплены за этим релизом. Для полностью автоматического обновления нужен отдельный синхронизатор GitHub → Remnawave; сейчас его нет. `profile-update-interval: 6` задаёт клиентам 6 часов, а в Clash Verge вручную задаётся 360 минут.
+GitHub проверяет источники каждые 6 часов и публикует только изменившуюся проверенную политику. URL внутри профилей закреплены за этим релизом. `scripts/sync_remnawave.py` обновляет через API два шаблона Mihomo и заголовок HAPP, когда настроены Secrets; настройка описана в README. `profile-update-interval: 6` задаёт клиентам 6 часов, а в Clash Verge вручную задаётся 360 минут.
 
-Остальные ассеты — базы, провайдеры правил, отчёты и резервные форматы. Конфиги загружают базы и провайдеры по ссылкам, поэтому удалить их и оставить только два файла нельзя без изменения устройства сборки. Для вставки в панель достаточно двух блоков выше.
+Остальные ассеты — базы, провайдеры правил, отчёты и резервные форматы. Конфиги загружают базы и провайдеры по ссылкам. PC и Router переиспользуют одинаковые доменные/IP-провайдеры без удвоения ассетов. Для вставки в панель достаточно нужных блоков выше.
 
 [Полный архив]({base}/2baikal-routing.zip) · [SHA256SUMS]({base}/SHA256SUMS) · [Проверки]({base}/validation.json) · [Изменения]({base}/changelog.md)
 
@@ -181,8 +198,8 @@ GitHub проверяет источники каждые 6 часов и пуб
     body=render(embedded)
     # Leave room below GitHub's body limits as the policy grows. Never truncate
     # a configuration: fall back to an exact-version download link instead.
-    for name in ['mihomo-config.yaml','happ-import-link.txt']:
-        if len(body.encode('utf-8'))<=60_000: break
+    for name in ['mihomo-router-config.yaml','mihomo-config.yaml','happ-import-link.txt']:
+        if len(body.encode('utf-8'))<=120_000: break
         embedded.remove(name)
         body=render(embedded)
     return body
@@ -190,7 +207,7 @@ GitHub проверяет источники каждые 6 часов и пуб
 
 def refresh_notes(repository,meta,dest,existing,body):
     # A spoiler must show the bytes actually served by this published release.
-    for name in ['mihomo-config.yaml','happ-import-link.txt']:
+    for name in ['mihomo-config.yaml','mihomo-router-config.yaml','happ-import-link.txt']:
         assets=[a for a in existing['assets'] if a['name']==name]
         if len(assets)!=1 or assets[0].get('digest')!='sha256:'+digest(dest/name):
             raise Invalid('Published configuration differs from release notes: '+name)
