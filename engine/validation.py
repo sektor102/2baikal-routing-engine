@@ -13,13 +13,15 @@ from .compiler import check_golden, check_router_golden, happ_rule_order
 from .geodata import Database
 from .io import digest, load_inputs, load_yaml, read_json, validate_happ, write_json
 from .model import Invalid, Rule, parse_mihomo
+from .organization import Group,verify_layout
+from .policy import classify
 
 
-def expanded_mihomo(directory):
+def expanded_mihomo(directory,texts=None):
     directory=Path(directory)
     config=load_yaml(directory/'config.yaml')
     output=[]
-    for text in config['rules']:
+    for text in config['rules'] if texts is None else texts:
         parts=[s.strip() for s in text.split(',')]
         if parts[0]!='RULE-SET':
             output.append(parse_mihomo(text,source='output:mihomo'))
@@ -43,6 +45,36 @@ def expanded_mihomo(directory):
             else: raise Invalid('Unknown provider behavior')
             output.append(rule)
     return output
+
+
+def semantic_key(rule):
+    options=set(rule.options)
+    if rule.kind in {'IP-CIDR','IP-CIDR6'}: options.add('no-resolve')
+    return rule.kind,rule.value,rule.action,tuple(sorted(options))
+
+
+def verify_service_output(directory,reference,layout,site,geoip,router=False):
+    kept=[i for i,r in enumerate(reference) if not router or r.kind!='PROCESS-NAME']
+    remap={old:new for new,old in enumerate(kept)}
+    ordered=[]
+    config=load_yaml(Path(directory)/'config.yaml')
+    end=0
+    for row in layout['groups']:
+        indices=row['source_indices']
+        if not indices or any(i not in remap for i in indices): raise Invalid('Invalid service source indices')
+        ordered.append(Group('', '', '', 0, '', [remap[i] for i in indices]))
+        if row['emitted_start']!=end: raise Invalid('Unaccounted rules in service layout')
+        end+=row['emitted_count']
+        originals=[reference[i] for i in indices]
+        if any(r.kind in {'GEOSITE','GEOIP'} for r in originals):
+            if len(originals)!=1: raise Invalid('Geo category merged with personal service rules')
+            rule=originals[0]
+            originals=list((site if rule.kind=='GEOSITE' else geoip).rules(rule.value,rule.action))
+        actual=expanded_mihomo(directory,config['rules'][row['emitted_start']:end])
+        if {semantic_key(r) for r in actual}!={semantic_key(r) for r in originals}:
+            raise Invalid('Service provider membership changed: '+row['service'])
+    if config['rules'][end:]!=['MATCH,DIRECT']: raise Invalid('Unexpected rules outside service layout')
+    return verify_layout([reference[i] for i in kept],ordered)
 
 
 def mihomo_test(dist,mihomo,geoip_path):
@@ -136,7 +168,11 @@ def validate(root,mihomo=None,xray=None,require_binaries=False):
     rows+=check_router_golden(router,site,geoip)
     bad=[r for r in rows if r['actual']!=r['expected']]
     if bad: raise Invalid('Rendered output routing regression: '+json.dumps(bad))
-    _,_,_,personal,_,_=load_inputs(root)
+    _,_,_,personal,friend,_=load_inputs(root)
+    reference,_,_=classify(personal,friend,load_yaml(root/'rules/policy.yaml'))
+    layout=read_json(dist/'ruleset-layout.json')
+    equivalence={'pc':verify_service_output(dist/'mihomo',reference,layout['pc'],site,geoip),
+                 'router':verify_service_output(dist/'mihomo-router',reference,layout['router'],site,geoip,router=True)}
     output_keys={(r.kind,r.value,r.action) for r in rules}
     router_keys={(r.kind,r.value,r.action) for r in router}
     ios_keys={(r.kind,r.value,r.action) for r in happ_rule_order(profile)}
@@ -159,6 +195,7 @@ def validate(root,mihomo=None,xray=None,require_binaries=False):
         raise Invalid('Personal input coverage lost in rendered output')
     if require_binaries and (not mihomo or not xray): raise Invalid('Both Mihomo and Xray required for release validation')
     result={'golden_cases':len(rows),'golden_failures':len(bad),'schema':'passed',
+            'service_equivalence':equivalence,
             'personal_coverage':coverage,
             'mihomo':mihomo_test(dist,mihomo,geoip_path) if mihomo else 'NOT RUN',
             'xray':xray_test(dist,xray,geoip_path) if xray else 'NOT RUN'}

@@ -21,6 +21,7 @@ from .geodata import Database, fields, message
 from .io import digest, load_inputs, load_yaml, read_json, validate_happ, write_json
 from .model import Invalid, Rule, conflicts, covers, matches, parse_happ, route
 from .policy import baseline_report, classify
+from .organization import Catalog,organize,verify_layout,legacy_provider_count,STAGES
 
 GOLDEN_PROXY=['x.com','t.co','pbs.twimg.com','video.twimg.com','discord.com','chatgpt.com',
               'youtube.com','api.epicgames.dev','steamcommunity.com','claude.ai','spotify.com',
@@ -158,7 +159,14 @@ def provider(out,name,rules,mihomo):
     return definitions
 
 
-def make_mihomo(base,raw,rules,site_db,ip_db,out,mihomo,geoip_url,base_url,router=False):
+def inline_mihomo(rule):
+    outbound={'PROXY':'→ Remnawave','DIRECT':'DIRECT','BLOCK':'REJECT'}[rule.action]
+    options=list(rule.options)
+    if rule.kind in {'IP-CIDR','IP-CIDR6'} and 'no-resolve' not in options: options.append('no-resolve')
+    return ','.join([rule.kind,rule.value,outbound,*options])
+
+
+def make_mihomo(base,raw,rules,site_db,ip_db,out,mihomo,geoip_url,base_url,catalog,router=False):
     config=copy.deepcopy(base)
     if router:
         config['find-process-mode']='off'
@@ -166,47 +174,54 @@ def make_mihomo(base,raw,rules,site_db,ip_db,out,mihomo,geoip_url,base_url,route
     config['geo-auto-update']=False
     config['rule-providers']={}
     lines=[]
-    # Group consecutive same-priority and same-action entries; category contents
-    # are isolated in their own providers, so action/order boundaries survive.
-    groups=[]
-    for rule in rules:
-        key=(rule.priority,rule.action)
-        if rule.kind=='GEOIP':
-            groups.append(('geoip',rule))
-        elif rule.kind=='GEOSITE':
-            groups.append(('geosite',rule))
-        elif groups and groups[-1][0]=='rules' and groups[-1][1]==key:
-            groups[-1][2].append(rule)
-        else: groups.append(('rules',key,[rule]))
-    for i,group in enumerate(groups):
-        action=group[1].action if group[0] in {'geoip','geosite'} else group[1][1]
+    groups,certificate=organize(rules,catalog)
+    if router:
+        kept=[i for i,r in enumerate(rules) if r.kind!='PROCESS-NAME']
+        remap={old:new for new,old in enumerate(kept)}
+        projected=[replace(g,indices=[remap[i] for i in g.indices if i in remap]) for g in groups]
+        certificate=verify_layout([rules[i] for i in kept],[g for g in projected if g.indices])
+    records=[]
+    for group in groups:
+        indices=[i for i in group.indices if not router or rules[i].kind!='PROCESS-NAME']
+        if not indices: continue
+        action=group.action
         outbound={'PROXY':'→ Remnawave','DIRECT':'DIRECT','BLOCK':'REJECT'}[action]
-        if group[0] in {'geosite','geoip'}:
-            rule=group[1]
-            database=site_db if group[0]=='geosite' else ip_db
+        if group.kind in {'GEOSITE','GEOIP'}:
+            rule=rules[indices[0]]
+            database=site_db if group.kind=='GEOSITE' else ip_db
             subset=list(database.rules(rule.value,rule.action))
-            name=f'{i:03d}-{group[0]}-{rule.value.replace("@","-")}'
         else:
-            subset=group[2]
-            name=f'{i:03d}-p{group[1][0]}-{action.lower()}'
-        if router:
-            subset=[r for r in subset if r.kind!='PROCESS-NAME']
-            if not subset: continue
-        definitions=provider(out,name,subset,mihomo)
-        for name,behavior,fmt in definitions:
-            relative=f'providers/{name}.{fmt}'
-            definition={'type':'http' if base_url else 'file','behavior':behavior,'format':fmt,'path':'./'+relative}
-            if base_url: definition.update(url=base_url+'/mihomo/'+relative,interval=21600)
-            config['rule-providers'][name]=definition
-            lines.append(f'RULE-SET,{name},{outbound}'+(',no-resolve' if behavior=='ipcidr' else ''))
+            subset=[rules[i] for i in indices]
+        start=len(lines)
+        files=[]
+        if group.provider:
+            definitions=provider(out,group.name,subset,mihomo)
+            for name,behavior,fmt in definitions:
+                relative=f'providers/{name}.{fmt}'
+                definition={'type':'http' if base_url else 'file','behavior':behavior,'format':fmt,'path':'./'+relative}
+                if base_url: definition.update(url=base_url+'/mihomo/'+relative,interval=21600)
+                if name in config['rule-providers']: raise Invalid('Duplicate readable provider name: '+name)
+                config['rule-providers'][name]=definition
+                lines.append(f'RULE-SET,{name},{outbound}'+(',no-resolve' if behavior=='ipcidr' else ''))
+                files.append(name+'.'+fmt)
+        else:
+            lines.extend(inline_mihomo(rule) for rule in subset)
+        records.append({'service':group.service,'title':group.title,'action':action,
+                        'priority':group.priority,'origin':group.kind.lower() if group.kind in {'GEOSITE','GEOIP'} else STAGES.get(group.priority,'custom'),
+                        'mode':'provider' if group.provider else 'inline','source_indices':indices,
+                        'files':files,'emitted_start':start,'emitted_count':len(lines)-start,
+                        'members':len({(r.kind,r.value) for r in subset})})
     config['rules']=lines+['MATCH,DIRECT']
+    layout={'certificate':certificate,'before_providers':legacy_provider_count(rules,site_db,ip_db,router),
+            'providers':len(config['rule-providers']),'inline_rules':sum(r['emitted_count'] for r in records if r['mode']=='inline'),
+            'groups':records}
     # Keep the original client structure AND both insertion comments.
     text=yaml.safe_dump(config,allow_unicode=True,sort_keys=False,width=140)
     text=re.sub(r'^proxies: null$', 'proxies: # LEAVE THIS LINE!',text,flags=re.M)
     text=re.sub(r'^(\s+)proxies: null$',r'\1proxies: # LEAVE THIS LINE!',text,flags=re.M)
     if text.count('# LEAVE THIS LINE!')!=2: raise Invalid('Lost Mihomo client insertion markers')
     (out/'config.yaml').write_text(text,encoding='utf-8',newline='\n')
-    if router: return config
+    if router: return config,layout
     optional=copy.deepcopy(config)
     optional.setdefault('hosts',{})['common.dot.dns.yandex.net']='77.88.8.8'
     dns=optional.setdefault('dns',{})
@@ -225,7 +240,7 @@ def make_mihomo(base,raw,rules,site_db,ip_db,out,mihomo,geoip_url,base_url,route
     text=re.sub(r'^proxies: null$','proxies: # LEAVE THIS LINE!',text,flags=re.M)
     text=re.sub(r'^(\s+)proxies: null$',r'\1proxies: # LEAVE THIS LINE!',text,flags=re.M)
     (out/'config-doh-optional.yaml').write_text(text,encoding='utf-8',newline='\n')
-    return config
+    return config,layout
 
 
 def check_golden(pc,profile,site,geoip):
@@ -291,6 +306,7 @@ def build(root,mihomo=None,repository=None,previous=None):
     root=Path(root)
     happ,base,raw,personal,friend,inventory=load_inputs(root)
     policy=load_yaml(root/'rules/policy.yaml')
+    catalog=Catalog(load_yaml(root/'rules/service-groups.yaml'))
     manifest=load_yaml(root/'sources/manifest.yaml')
     rules,review,duplicates=classify(personal,friend,policy)
     ios_rules=effective_happ(rules)
@@ -364,8 +380,17 @@ def build(root,mihomo=None,repository=None,previous=None):
         (out/'mihomo-router').mkdir()
         (out/'geosite.dat').write_bytes(compact)
         write_json(out/'happ/routing.json',profile)
-        make_mihomo(base,raw,rules,site_compact,ip,out/'mihomo',mihomo,geoip_url,base_url)
-        make_mihomo(base,raw,rules,site_compact,ip,out/'mihomo-router',mihomo,geoip_url,base_url,router=True)
+        _,pc_layout=make_mihomo(base,raw,rules,site_compact,ip,out/'mihomo',mihomo,geoip_url,base_url,catalog)
+        _,router_layout=make_mihomo(base,raw,rules,site_compact,ip,out/'mihomo-router',mihomo,geoip_url,base_url,catalog,router=True)
+        write_json(reports/'ruleset-layout.json',{'schema':1,'pc':pc_layout,'router':router_layout})
+        index=['# Rulesets by service','',
+               'Names change organization only. Explicit overrides, personal rules, processes and Geo categories keep their priorities.',
+               'Singletons and order-sensitive fragments are explicit rules; they do not need separate downloads.','',
+               f"PC providers: {pc_layout['before_providers']} → {pc_layout['providers']}; Router: {router_layout['before_providers']} → {router_layout['providers']}.",'',
+               '| Service | Route | Layer | Storage | Members | Files |','|---|---|---|---|---:|---|']
+        for row in pc_layout['groups']:
+            index.append('| '+ ' | '.join([row['title'],row['action'],row['origin'],row['mode'],str(row['members']),', '.join(row['files']) or 'inline'])+' |')
+        (reports/'rulesets.md').write_text('\n'.join(index)+'\n',encoding='utf-8',newline='\n')
         # Release assets are flat archives; URLs inside config point at flat asset names.
         if base_url:
             for file in [*(out/'mihomo').glob('config*.yaml'),*(out/'mihomo-router').glob('config*.yaml')]:
@@ -411,7 +436,7 @@ def build(root,mihomo=None,repository=None,previous=None):
                  'limitations':['HAPP native iOS execution requires device testing.',
                                 'Optional DoH validated syntactically; network/device DNS leakage is not proven.']}
         write_json(out/'release.json',release)
-        for name in ['golden.json','conflicts.json','review.json','baseline.json']:
+        for name in ['golden.json','conflicts.json','review.json','baseline.json','ruleset-layout.json','rulesets.md']:
             shutil.copyfile(reports/name,out/name)
         sums=''.join(f'{digest(file)}  {file.relative_to(out).as_posix()}\n'
                      for file in sorted(out.rglob('*')) if file.is_file())

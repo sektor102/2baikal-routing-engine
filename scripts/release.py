@@ -59,6 +59,9 @@ def prepare():
         raise Invalid('Validation does not belong to this artifact tree')
     if validation.get('golden_failures') or validation.get('schema')!='passed':
         raise Invalid('Routing/schema validation missing')
+    if any(validation.get('service_equivalence',{}).get(client,{}).get('status')!='passed'
+           for client in ['pc','router']):
+        raise Invalid('Service regrouping equivalence proof missing')
     if not isinstance(validation.get('mihomo'),list) or not isinstance(validation.get('xray'),dict):
         raise Invalid('Both native binary checks required')
     expected={'mihomo/config.yaml','mihomo/config-doh-optional.yaml','mihomo-router/config.yaml'}
@@ -189,6 +192,8 @@ GitHub проверяет источники каждые 6 часов и пуб
 Остальные ассеты — базы, провайдеры правил, отчёты и резервные форматы. Конфиги загружают базы и провайдеры по ссылкам. PC и Router переиспользуют одинаковые доменные/IP-провайдеры без удвоения ассетов. Для вставки в панель достаточно нужных блоков выше.
 
 [Полный архив]({base}/2baikal-routing.zip) · [SHA256SUMS]({base}/SHA256SUMS) · [Проверки]({base}/validation.json) · [Изменения]({base}/changelog.md)
+
+[Наборы по сервисам]({base}/rulesets.md) · [Проверка сохранения приоритетов]({base}/ruleset-layout.json)
 
 Исходных личных правил: {meta['counts']['personal']}. Перед публикацией проверены схемы, контрольные маршруты и конфиги штатными Mihomo/Xray. Проверка HAPP на самом iPhone остаётся ручной.
 

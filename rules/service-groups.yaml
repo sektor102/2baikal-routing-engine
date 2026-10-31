@@ -1,0 +1,149 @@
+# Naming only: this catalog never adds rules or changes their destinations.
+# Unlisted domains/processes keep working as explicit, readable rules.
+version: 1
+services:
+  apple:
+    title: Apple / iCloud
+    domains: [apple.com, icloud.com, mzstatic.com, aaplimg.com, apple-dns.net, cdn-apple.com]
+    networks: [17.0.0.0/8]
+  vivox:
+    title: Vivox voice
+    domains: [vivox.com]
+  epic-games:
+    title: Epic Games
+    domains: [epicgames.dev, epicgames.com]
+  steam:
+    title: Steam
+    domains: [steamcommunity.com, steamdb.info]
+  tarkov:
+    title: Escape from Tarkov
+    domains: [escapefromtarkov.com, battlestategames.com, eft-project.com, tarkov.ru, tarkov.cc, tarkov.help, tarkovtracker.org]
+    processes: [BsgLauncher.exe, EscapeFromTarkov.exe, EscapeFromTarkov_BE.exe, EscapeFromTarkovArena.exe, EscapeFromTarkovArena_BE.exe]
+  wardogs:
+    title: Wardogs
+    domains: [wardogs.zone, wardogs.com, wardogs.n4lab.dev, live.wardogs.bulkhead.pragmaengine.com]
+    processes: [WardogsClient-Win64-Shipping.exe]
+  discord:
+    title: Discord
+    domains: [discord.com, discord.gg, discordapp.com, discordapp.net, discord.media]
+    processes: [Discord.exe]
+  whatsapp:
+    title: WhatsApp
+    domains: [whatsapp.com, whatsapp.net, wa.me]
+  twitter:
+    title: Twitter / X
+    domains: [x.com, twitter.com, twimg.com, t.co, twtrdns.net, twitteroauth.com, pscp.tv, periscope.tv, tweetdeck.com, ads-twitter.com]
+  instagram:
+    title: Instagram
+    domains: [instagram.com, cdninstagram.com]
+  threads:
+    title: Threads
+    domains: [threads.com, threads.net]
+  facebook:
+    title: Facebook / Messenger
+    domains: [facebook.com, facebook.net, fbcdn.net, messenger.com]
+  firebase:
+    title: Firebase app services
+    domains: [firebaseinstallations.googleapis.com, firebase-settings.crashlytics.com, firebase.googleapis.com]
+  google-push:
+    title: Google push
+    domains: [mtalk.google.com]
+  yandex-app-services:
+    title: Yandex app services
+    domains: [startup.mobile.yandex.net, mobileproxy.passport.yandex.net, startup-mobile.ap.yandex-net.ru, startup.mobile.webvisor.com, yandex-team.ru, appmetrica.yandex.net]
+  nalog:
+    title: FNS / Nalog
+    domains: [nalog.ru]
+  signal:
+    title: Signal
+    domains: [signal.org, signal.me, whispersystems.org]
+  openai:
+    title: OpenAI / ChatGPT
+    domains: [chatgpt.com, openai.com, oaistatic.com, oaiusercontent.com, chat.com]
+    processes: [ChatGPT Classic.exe, ChatGPT.exe]
+  linkedin:
+    title: LinkedIn
+    domains: [linkedin.com, licdn.com]
+  bbc:
+    title: BBC
+    domains: [bbc.com, bbc.co.uk, bbci.co.uk]
+  youtube:
+    title: YouTube
+    domains: [youtube.com, youtu.be, googlevideo.com, ytimg.com, ggpht.com, youtubei.googleapis.com]
+  roblox:
+    title: Roblox
+    domains: [roblox.com, rbxcdn.com]
+  twitch:
+    title: Twitch
+    domains: [twitch.tv, twitchcdn.net, jtvnw.net]
+  telegram:
+    title: Telegram
+    domains: [telegram.org, telegram.me, t.me, telegram-cdn.org]
+    processes: [Telegram.exe]
+  nexus-mods:
+    title: Nexus Mods
+    domains: [nexusmods.com, nexus-cdn.com]
+  spotify:
+    title: Spotify
+    domains: [spotify.com, spotifycdn.com, scdn.co, spoti.fi]
+    processes: [Spotify.exe]
+  reddit:
+    title: Reddit
+    domains: [reddit.com, redd.it, redditmedia.com, redditstatic.com]
+  github:
+    title: GitHub
+    domains: [github.com, githubusercontent.com, githubassets.com, github.io]
+  microsoft-dev:
+    title: Microsoft developer services
+    domains: [visualstudio.com, vscode.dev]
+  speedtest:
+    title: Speedtest / Ookla
+    domains: [speedtest.net, ookla.com]
+  rutracker:
+    title: RuTracker
+    domains: [rutracker.org, rutracker.cc, rutracker.net]
+  rutor:
+    title: Rutor
+    domains: [rutor.is, rutor.info]
+  anthropic:
+    title: Anthropic / Claude
+    domains: [claude.ai, claude.com, anthropic.com]
+  grok:
+    title: Grok / xAI
+    domains: [grok.com, x.ai]
+  gemini:
+    title: Google Gemini
+    domains: [gemini.google.com, aistudio.google.com, ai.google.dev, generativelanguage.googleapis.com]
+  cursor:
+    title: Cursor
+    domains: [cursor.com, cursor.sh]
+  notion:
+    title: Notion
+    domains: [notion.so, notion.site]
+  netflix:
+    title: Netflix
+    domains: [netflix.com, nflxvideo.net]
+  adobe:
+    title: Adobe
+    domains: [adobe.com, adobe.io]
+  soundcloud:
+    title: SoundCloud
+    domains: [soundcloud.com, sndcdn.com, soundcloud.cloud]
+  microsoft-edge:
+    title: Microsoft Edge / WebView
+    processes: [msedge.exe, msedgewebview2.exe]
+  battleye:
+    title: BattlEye
+    processes: [BEService.exe]
+  codex:
+    title: Codex
+    processes: [Codex.exe]
+  razer:
+    title: Razer
+    processes: [RazerAppEngine.exe]
+  sims:
+    title: The Sims
+    processes: [TS4_x64.exe]
+  wand:
+    title: Wand
+    processes: [Wand.exe]

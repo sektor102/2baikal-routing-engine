@@ -293,6 +293,35 @@ class BuildTests(unittest.TestCase):
             for file in (self.root/'dist/mihomo-router/providers').glob(name+'.*'):
                 self.assertEqual(file.read_bytes(),(self.root/'dist/mihomo/providers'/file.name).read_bytes())
 
+    def test_service_layout_is_smaller_readable_and_verified(self):
+        build(self.root)
+        layout=read_json(self.root/'dist/ruleset-layout.json')
+        for family,client in [('mihomo','pc'),('mihomo-router','router')]:
+            config=load_yaml(self.root/'dist'/family/'config.yaml')
+            self.assertLess(layout[client]['providers'],layout[client]['before_providers'])
+            self.assertTrue(all(not name[:1].isdigit() for name in config['rule-providers']))
+            self.assertIn('apple-direct-personal-domain',config['rule-providers'])
+            self.assertIn('twitter-proxy-personal-domain',config['rule-providers'])
+            self.assertTrue(any(text.startswith('IP-CIDR,') and text.endswith(',no-resolve')
+                                for text in config['rules']))
+        result=validate(self.root)
+        self.assertEqual(result['service_equivalence']['pc']['status'],'passed')
+        self.assertEqual(result['service_equivalence']['router']['status'],'passed')
+
+    def test_validation_rejects_wrong_service_destination(self):
+        build(self.root)
+        path=self.root/'dist/mihomo/config.yaml'
+        config=load_yaml(path)
+        index=next(i for i,text in enumerate(config['rules']) if 'adobe-proxy-personal-domain' in text)
+        config['rules'][index]=config['rules'][index].replace('→ Remnawave','DIRECT')
+        from engine.compiler import text_yaml
+        text_yaml(path,config)
+        sums=self.root/'dist/SHA256SUMS'
+        from engine.io import digest
+        sums.write_text(''.join(f'{digest(f)}  {f.relative_to(self.root/"dist").as_posix()}\n'
+                       for f in sorted((self.root/'dist').rglob('*')) if f.is_file() and f!=sums),encoding='utf-8')
+        with self.assertRaisesRegex(Invalid,'Service provider membership changed'): validate(self.root)
+
     def test_secret_scan(self):
         file=self.root/'secret.yaml'
         file.write_text('uuid: '+'1'*8+'-'+'2'*4+'-'+'3'*4+'-'+'4'*4+'-'+'5'*12)
