@@ -19,7 +19,7 @@ import yaml
 
 from .geodata import Database, fields, message
 from .io import digest, load_inputs, load_yaml, read_json, validate_happ, write_json
-from .model import Invalid, Rule, conflicts, covers, matches, parse_happ, route
+from .model import Invalid, Rule, conflicts, covers, domain, matches, parse_happ, route
 from .policy import baseline_report, classify
 from .organization import Catalog,organize,verify_layout,legacy_provider_count,STAGES
 
@@ -27,6 +27,11 @@ GOLDEN_PROXY=['x.com','t.co','pbs.twimg.com','video.twimg.com','discord.com','ch
               'youtube.com','api.epicgames.dev','steamcommunity.com','claude.ai','spotify.com',
               'wardogs.n4lab.dev','live.wardogs.bulkhead.pragmaengine.com',
               'deeep-storage.anybrain.gg','opm.elytra.ac','grok.com','x.ai']
+GOLDEN_PROXY += ['meta.com','meta.ai','metaaiusercontent.com','metaaivm.com','atmeta.com',
+                 'llama.com','muse.ai','fb.watch','fbcdn.com','fbsbx.net','tfbnw.net',
+                 'm.me','msngr.com','ig.me','igcdn.com','igsonar.com',
+                 'graph.whatsapp.com','graph.whatsapp.net',
+                 'probe.graph.whatsapp.com','probe.graph.whatsapp.net']
 GOLDEN_DIRECT=['wardxp-mim.vivox.com','vivox.com','escapefromtarkov.com','battlestategames.com',
                'apple.com','push.apple.com','mask.icloud.com','lkfl2.nalog.ru','lknpd.nalog.ru']
 GOLDEN_IPS=['127.0.0.1','10.1.2.3','172.16.1.1','192.168.1.1','100.64.0.1','169.254.1.1',
@@ -121,6 +126,44 @@ def protect_geosite(db,categories,rules):
                     raise Invalid(f'Cannot subtract DIRECT {d.value} from broader {category}:{rule.kind},{rule.value}')
             kept.append(raw)
         # Keep all metadata except the removed repeated domain fields.
+        other=b''.join(raw for n,w,v,raw in fields(entry.raw) if n!=2)
+        result.append(message(1,other+b''.join(message(2,m) for m in kept)))
+    return b''.join(result),removed
+
+
+def unblock_geosite(db,rules,domains):
+    """Remove only explicitly approved BLOCK entries, shared by all clients."""
+    if not isinstance(domains,list): raise Invalid('unblock-domains must be a list')
+    allowed=[]
+    for value in domains:
+        name=domain(value)
+        if name!=value or name in [r.value for r in allowed]:
+            raise Invalid('Noncanonical or duplicate unblock domain')
+        if not any(r.kind=='DOMAIN-SUFFIX' and r.value==name and r.action=='PROXY'
+                   and r.source=='policy:overrides' and r.priority==10 for r in rules):
+            raise Invalid('Unblock domain requires an explicit PROXY suffix override: '+name)
+        allowed.append(Rule('DOMAIN-SUFFIX',name,'PROXY','policy:unblock-domains',10))
+    blocked={r.value.split('@')[0] for r in rules if r.kind=='GEOSITE' and r.action=='BLOCK'}
+    result=[]; removed=[]
+    for category,entry in sorted(db.entries.items()):
+        if category not in blocked or not allowed:
+            result.append(message(1,entry.raw)); continue
+        before=len(removed)
+        kept=[]
+        for raw,rule in zip(entry.members,entry.parsed):
+            covering=[a for a in allowed if covers(a,rule)]
+            if covering:
+                removed.append({'category':category,'removed':rule.record(),
+                                'reason':'explicit functional endpoint exception to BLOCK',
+                                'covered_by':[a.record() for a in covering]})
+                continue
+            for a in allowed:
+                if covers(rule,a) or (rule.kind in {'DOMAIN-KEYWORD','DOMAIN-REGEX'} and
+                                     (matches(rule,a.value) or matches(rule,'probe.'+a.value))):
+                    raise Invalid('Cannot subtract unblock domain from broader BLOCK entry: '+a.value+' / '+rule.value)
+            kept.append(raw)
+        if len(removed)==before:
+            result.append(message(1,entry.raw)); continue
         other=b''.join(raw for n,w,v,raw in fields(entry.raw) if n!=2)
         result.append(message(1,other+b''.join(message(2,m) for m in kept)))
     return b''.join(result),removed
@@ -325,6 +368,7 @@ def build(root,mihomo=None,repository=None,previous=None):
     site.require(sites)
     ip.require(ips)
     compact,pruned=protect_geosite(site,sites,ios_rules)
+    compact,unblocked=unblock_geosite(Database(compact,'geosite'),ios_rules,policy.get('unblock-domains',[]))
     site_compact=Database(compact,'geosite')
     site_compact.require(sites)
     profile=copy.deepcopy(happ)
@@ -347,6 +391,7 @@ def build(root,mihomo=None,repository=None,previous=None):
     write_json(reports/'review.json',review)
     write_json(reports/'conflicts.json',{'overlaps':conflicts(rules),'duplicates':duplicates,
                                        'geosite_personal_direct_overrides':pruned,
+                                       'geosite_block_exceptions':unblocked,
                                        'category_collisions':[{'proxy':'ru-blocked','direct':'ru-available-only-inside',
                                                               'note':'intersection depends on real database; proxy first in HAPP'}],
                                        'process_policy':'Personal domain/IP exceptions precede process rules on PC.'})

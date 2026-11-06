@@ -13,6 +13,33 @@ overrides:
   - 'DOMAIN-SUFFIX,wardxp-mim.vivox.com,DIRECT'
   - 'DOMAIN-SUFFIX,api.epicgames.dev,PROXY'
   - 'DOMAIN-SUFFIX,steamcommunity.com,PROXY'
+  # Meta / Meta AI, plus missing Facebook, Messenger and Instagram endpoints.
+  # https://github.com/v2fly/domain-list-community/tree/master/data
+  - 'DOMAIN-SUFFIX,meta.com,PROXY'
+  - 'DOMAIN-SUFFIX,meta.ai,PROXY'
+  - 'DOMAIN-SUFFIX,metaaiusercontent.com,PROXY'
+  - 'DOMAIN-SUFFIX,metaaivm.com,PROXY'
+  - 'DOMAIN-SUFFIX,atmeta.com,PROXY'
+  - 'DOMAIN-SUFFIX,llama.com,PROXY'
+  - 'DOMAIN-SUFFIX,muse.ai,PROXY'
+  - 'DOMAIN-SUFFIX,fb.watch,PROXY'
+  - 'DOMAIN-SUFFIX,fbcdn.com,PROXY'
+  - 'DOMAIN-SUFFIX,fbsbx.net,PROXY'
+  - 'DOMAIN-SUFFIX,tfbnw.net,PROXY'
+  - 'DOMAIN-SUFFIX,m.me,PROXY'
+  # Messenger Rooms: https://www.netify.ai/resources/domains/msngr.com
+  - 'DOMAIN-SUFFIX,msngr.com,PROXY'
+  - 'DOMAIN-SUFFIX,ig.me,PROXY'
+  - 'DOMAIN-SUFFIX,igcdn.com,PROXY'
+  - 'DOMAIN-SUFFIX,igsonar.com,PROXY'
+  - 'DOMAIN-SUFFIX,graph.whatsapp.com,PROXY'
+  - 'DOMAIN-SUFFIX,graph.whatsapp.net,PROXY'
+# Narrow exceptions to BLOCK GeoSite categories; each needs a matching PROXY
+# override above. Broader blocking entries cause a build failure, not removal.
+# https://github.com/v2fly/domain-list-community/issues/4127
+unblock-domains:
+  - graph.whatsapp.com
+  - graph.whatsapp.net
 # Explicit direct overlays must survive before aggregate proxy categories in HAPP.
 # Conflicting broad upstream entries cause a build failure, never silent route loss.
 protect-direct: true

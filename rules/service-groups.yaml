@@ -35,13 +35,16 @@ services:
     domains: [x.com, twitter.com, twimg.com, t.co, twtrdns.net, twitteroauth.com, pscp.tv, periscope.tv, tweetdeck.com, ads-twitter.com]
   instagram:
     title: Instagram
-    domains: [instagram.com, cdninstagram.com]
+    domains: [instagram.com, cdninstagram.com, ig.me, igcdn.com, igsonar.com]
   threads:
     title: Threads
     domains: [threads.com, threads.net]
   facebook:
     title: Facebook / Messenger
-    domains: [facebook.com, facebook.net, fbcdn.net, messenger.com]
+    domains: [facebook.com, facebook.net, fbcdn.net, messenger.com, fb.watch, fbcdn.com, fbsbx.net, tfbnw.net, m.me, msngr.com]
+  meta:
+    title: Meta / Meta AI
+    domains: [meta.com, meta.ai, metaaiusercontent.com, metaaivm.com, atmeta.com, llama.com, muse.ai]
   firebase:
     title: Firebase app services
     domains: [firebaseinstallations.googleapis.com, firebase-settings.crashlytics.com, firebase.googleapis.com]

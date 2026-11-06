@@ -115,6 +115,8 @@ python -m engine validate --mihomo .cache/tools/mihomo.exe --xray .cache/tools/x
 
 В `friend-approved` добавить точную пару `TYPE,value` для opt-in. Все новые процессы, gstatic.com и keyword battleye требуют ревью. Статусы — в review.json. Персональные широкие процессы Edge/Codex сохранены; явные личные домены проверяются раньше процессов.
 
+`unblock-domains` содержит точечные исключения к блокирующим GeoSite-категориям: сейчас только `graph.whatsapp.com` и `graph.whatsapp.net`, необходимые для функций WhatsApp/Meta AI. Для каждого имени обязательно соответствующее `DOMAIN-SUFFIX,...,PROXY` в `overrides`. Сборщик удаляет только полностью покрытые исключением записи из производной общей GeoSite-базы; поэтому результат одинаков для PC, Router и HAPP. Остальные блокировки сохраняются. Если источник начнёт блокировать более широкий родительский домен или пересекающийся regex/keyword, сборка остановится для проверки. Удалённые записи перечислены в `conflicts.json` → `geosite_block_exceptions`. Список Meta/Meta AI и недостающие домены Facebook, Messenger и Instagram добавлены в `overrides`, с проверками основных имён и поддоменов Graph.
+
 ## Источники и приоритеты
 
 `sources/manifest.yaml` задаёт URL, формат, приоритет, доверие и режим. `release.json` фиксирует фактические SHA256/ETag, размеры, категории, время проверки и source date, если оно доступно; неизвестная дата обозначена null. [Устройство движка](docs/design.md).
