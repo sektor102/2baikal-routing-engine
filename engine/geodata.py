@@ -11,6 +11,8 @@ from dataclasses import dataclass
 
 from .model import Invalid, Rule
 
+MAX_GEOSITE_BYTES = 128 * 1024 * 1024
+
 
 def varint(data, pos):
     value = 0
@@ -99,7 +101,8 @@ def parse_member(member, kind, name):
 
 class Database:
     def __init__(self, data, kind):
-        if kind not in {'geosite', 'geoip'} or not data or len(data)>80_000_000:
+        max_bytes = MAX_GEOSITE_BYTES if kind == 'geosite' else 80_000_000
+        if kind not in {'geosite', 'geoip'} or not data or len(data) > max_bytes:
             raise Invalid('Empty, oversize, or unknown geodata')
         self.kind, self.entries = kind, {}
         self.sha256 = hashlib.sha256(data).hexdigest()

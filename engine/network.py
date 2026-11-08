@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from .geodata import Database
+from .geodata import Database, MAX_GEOSITE_BYTES
 from .io import StrictLoader, load_yaml, read_json, write_json
 from .model import Invalid, parse_mihomo
 
@@ -19,16 +19,16 @@ def now():
     return dt.datetime.now(dt.timezone.utc).isoformat()
 
 
-def request(url, headers=None, timeout=30):
+def request(url, headers=None, timeout=30, *, max_bytes=MAX_BYTES):
     if not url.startswith('https://'):
         raise Invalid('Only HTTPS upstream allowed')
     req=urllib.request.Request(url,headers={'User-Agent':'2Baikal-Routing/0.1',**(headers or {})})
     with urllib.request.urlopen(req,timeout=timeout) as response:
         if not response.url.startswith('https://'): raise Invalid('Insecure redirect')
         declared=response.headers.get('Content-Length')
-        if declared and int(declared)>MAX_BYTES: raise Invalid('Upstream too large')
-        data=response.read(MAX_BYTES+1)
-        if not data or len(data)>MAX_BYTES: raise Invalid('Empty or oversize upstream')
+        if declared and int(declared) > max_bytes: raise Invalid('Upstream too large')
+        data = response.read(max_bytes + 1)
+        if not data or len(data) > max_bytes: raise Invalid('Empty or oversize upstream')
         return data,dict(response.headers),response.url
 
 
@@ -62,6 +62,7 @@ def fetch_one(source, cache, required=(), offline=False, retries=2, allow_cache_
     headers={}
     if valid_old and old.get('etag'): headers['If-None-Match']=old['etag']
     if valid_old and old.get('last_modified'): headers['If-Modified-Since']=old['last_modified']
+    max_bytes = MAX_GEOSITE_BYTES if source['format'] == 'geosite' else MAX_BYTES
     last_error=None
     for attempt in range(retries+1):
         try:
@@ -77,7 +78,7 @@ def fetch_one(source, cache, required=(), offline=False, retries=2, allow_cache_
                 target_url=source['pin-template'].replace('{sha}',revision)
                 if old.get('pinned_url')!=target_url: active_headers={}
             try:
-                data,head,final_url=request(target_url,active_headers)
+                data,head,final_url=request(target_url,active_headers,max_bytes=max_bytes)
             except urllib.error.HTTPError as exc:
                 if exc.code!=304 or not valid_old: raise
                 data,head,final_url=old_data,{},old.get('final_url',source['url'])

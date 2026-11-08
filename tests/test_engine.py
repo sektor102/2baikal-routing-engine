@@ -217,7 +217,7 @@ class FetchTests(unittest.TestCase):
         revision='a'*40
         source={**self.source,'pin-api':'https://example.invalid/api',
                 'pin-template':'https://example.invalid/{sha}/test.dat'}
-        def response(url,*args):
+        def response(url,*args,**kwargs):
             if url==source['pin-api']:
                 return json.dumps({'sha':revision,'commit':{'committer':{'date':'2026-10-30T20:00:00Z'}}}).encode(),{},url
             self.assertEqual(url,'https://example.invalid/'+revision+'/test.dat')
