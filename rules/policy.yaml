@@ -13,7 +13,6 @@ overrides:
   - 'DOMAIN-SUFFIX,wardxp-mim.vivox.com,DIRECT'
   - 'DOMAIN-SUFFIX,api.epicgames.dev,PROXY'
   - 'DOMAIN-SUFFIX,steamcommunity.com,PROXY'
-  - 'DOMAIN-SUFFIX,rob-run.kefir.games,PROXY'
   # Meta / Meta AI, plus missing Facebook, Messenger and Instagram endpoints.
   # https://github.com/v2fly/domain-list-community/tree/master/data
   - 'DOMAIN-SUFFIX,meta.com,PROXY'
