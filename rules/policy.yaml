@@ -37,7 +37,6 @@ overrides:
   # Games in Proxy
   - 'PROCESS-NAME,mywintercar.exe,PROXY'
   - 'PROCESS-NAME,robrun.exe,PROXY'
-  mywintercar.exe
 # Narrow exceptions to BLOCK GeoSite categories; each needs a matching PROXY
 # override above. Broader blocking entries cause a build failure, not removal.
 # https://github.com/v2fly/domain-list-community/issues/4127
